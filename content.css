@@ -1,9 +1,8 @@
 @charset "UTF-8";
 .svk-btn {
-  display: flex !important;
+  display: block !important;
   float: left !important;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   width: 34px;
   height: 34px;
   margin-right: 5px;
@@ -11,23 +10,57 @@
   background: #e6edf5;
   border: 0;
   font-size: 22px;
+  overflow: hidden;
   color: #6f98c7;
   -webkit-font-smoothing: subpixel-antialiased;
   transition: all 80ms linear;
   cursor: pointer; }
   .claimed .svk-btn {
     visibility: hidden; }
-  .svk-btn:hover {
-    color: white;
-    background: #73777b; }
   .svk-btn:active {
     transform: scale(0.9); }
+  .svk-btn--icon_warning:active {
+    transform: none; }
+  .svk-btn__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    font-style: normal;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 2px;
+    transition: color 80ms linear, background 80ms linear, transform .3s; }
+    .svk-btn__arrow:hover {
+      color: white;
+      background: #73777b; }
+    .svk-btn--icon_warning .svk-btn__arrow {
+      transform: translateX(100%); }
+  .svk-btn__warn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    font-style: normal;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 2px;
+    transition: color 80ms linear, background 80ms linear, transform .3s;
+    background: #f5c018;
+    color: white;
+    transform: translateX(-100%); }
+    .svk-btn--icon_warning .svk-btn__warn {
+      display: flex;
+      transform: translateX(0); }
 
 .audio_row .audio_row_counter {
-  display: flex !important;
+  display: block !important;
   float: left !important;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   width: 34px;
   height: 34px;
   margin-right: 5px;
@@ -35,19 +68,25 @@
   background: #e6edf5;
   border: 0;
   font-size: 22px;
+  overflow: hidden;
   color: #6f98c7;
   -webkit-font-smoothing: subpixel-antialiased;
-  position: relative;
   cursor: progress; }
   .claimed .audio_row .audio_row_counter {
     visibility: hidden; }
   .audio_row .audio_row_counter::after {
-    content: '↓';
     display: flex;
     align-items: center;
     justify-content: center;
+    position: absolute;
+    font-style: normal;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100%; }
+    height: 100%;
+    border-radius: 2px;
+    transition: color 80ms linear, background 80ms linear, transform .3s;
+    content: '↓'; }
 
 .audio_inline_player {
   left: 78px !important; }

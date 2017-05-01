@@ -7,9 +7,11 @@ let m, v, c;
 
 m = {
     audioRows        : document.body.getElementsByClassName('audio_row'),
-    svkBtnHtml       : '<div class="svk-btn">↓</div>',
+    svkBtnHtml       : '<div class="svk-btn"><i class="svk-btn__arrow">↓</i><i class="svk-btn__warn">:(</i></div>',
     checkInterval    : 1000,
     lastAudioRowsHash: null,
+
+    getAudioId: audioRow => audioRow.getAttribute('data-full-id'),
 
     getAudioRowsHash: () =>{
         let length = m.audioRows.length,
@@ -20,7 +22,7 @@ m = {
                 break;
             case 1 :{
                 let firstEl     = m.audioRows[0],
-                    firstElHash = m.isSvkBtnAdded(firstEl) + firstEl.getAttribute('data-full-id');
+                    firstElHash = m.isSvkBtnAdded(firstEl) + m.getAudioId(firstEl);
 
                 hash += `-${firstElHash}`;
                 break;
@@ -29,8 +31,8 @@ m = {
             case 2 :
                 let firstEl     = m.audioRows[0],
                     lastEl      = m.audioRows[length - 1],
-                    firstElHash = m.isSvkBtnAdded(firstEl) + firstEl.getAttribute('data-full-id'),
-                    lastElHash  = m.isSvkBtnAdded(lastEl) + lastEl.getAttribute('data-full-id');
+                    firstElHash = m.isSvkBtnAdded(firstEl) + m.getAudioId(firstEl),
+                    lastElHash  = m.isSvkBtnAdded(lastEl) + m.getAudioId(lastEl);
 
                 hash += `-${firstElHash}-${lastElHash}`;
                 break;
@@ -39,9 +41,9 @@ m = {
                 let firstEl      = m.audioRows[0],
                     middleEl     = m.audioRows[Math.round(length / 2) - 1],
                     lastEl       = m.audioRows[length - 1],
-                    firstElHash  = m.isSvkBtnAdded(firstEl) + firstEl.getAttribute('data-full-id'),
-                    middleElHash = m.isSvkBtnAdded(middleEl) + middleEl.getAttribute('data-full-id'),
-                    lastElHash   = m.isSvkBtnAdded(lastEl) + lastEl.getAttribute('data-full-id');
+                    firstElHash  = m.isSvkBtnAdded(firstEl) + m.getAudioId(firstEl),
+                    middleElHash = m.isSvkBtnAdded(middleEl) + m.getAudioId(middleEl),
+                    lastElHash   = m.isSvkBtnAdded(lastEl) + m.getAudioId(lastEl);
 
                 hash += `-${firstElHash}-${middleElHash}-${lastElHash}`;
                 break;
@@ -60,6 +62,29 @@ m = {
         // If there is a counter
         if(el.classList.contains('audio_row_counter'))
             return el;
+    },
+
+    getAudioDataFromRespose: data =>{
+        try {
+            let jsonString   = data.split('<!json>')[1].split('<!>')[0],
+                audioDataArr = JSON.parse(jsonString)[0],
+                linkURL      = new URL(audioDataArr[2]);
+
+            return {
+                url: linkURL.origin + linkURL.pathname,
+                filename: m.decodeHtml(`${audioDataArr[4]} - ${audioDataArr[3]}.mp3`)
+            }
+
+        } catch(e){
+            console.warn("[svk]: Couldn't get url from data");
+            console.error(e);
+        }
+    },
+
+    decodeHtml: html =>{
+        let txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
     }
 };
 
@@ -81,8 +106,10 @@ c = {
         }
     },
 
-    isSvkBtnAdded        : m.isSvkBtnAdded,
-    getAfterSvkBtnCounter: m.getAfterSvkBtnCounter,
+    getAudioId             : m.getAudioId,
+    isSvkBtnAdded          : m.isSvkBtnAdded,
+    getAfterSvkBtnCounter  : m.getAfterSvkBtnCounter,
+    getAudioDataFromRespose: m.getAudioDataFromRespose,
 
     get audioRows(){ return m.audioRows },
     get svkBtnHtml(){ return m.svkBtnHtml },
@@ -121,15 +148,74 @@ v = {
                 if(audioRowCounter)
                     audioRowCounter.style.setProperty('display', 'none', 'important');
 
-                // Bind event
-                audioRowInner.firstElementChild.onclick = v.onSvkBtnClick;
+                {
+                    let svkBtn = audioRowInner.firstElementChild;
+
+                    svkBtn.setAttribute('data-svk-id', c.getAudioId(audioRow));
+                    svkBtn.addEventListener('click', v.onSvkBtnClick);
+                }
+
             }
         });
     },
 
     onSvkBtnClick: function(e){
         e.stopPropagation();
-        console.log('click');
+
+        let svkBtn      = this,
+            request     = new XMLHttpRequest(),
+            requestBody = 'act=reload_audio&al=1&ids=' + svkBtn.getAttribute('data-svk-id');
+
+        // ----------------------------------------------------
+
+        // Quit if warning is showing
+        if(svkBtn.classList.contains('svk-btn--icon_warning'))
+            return;
+
+        // ----------------------------------------------------
+
+        request.open('POST', '/al_audio.php');
+        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        request.addEventListener('load', () => v.onAudioDataReceived(request, svkBtn));
+        request.addEventListener('error', () => v.showWarning(svkBtn));
+        request.send(requestBody);
+
+        // ----------------------------------------------------
+    },
+
+    onAudioDataReceived: (request, svkBtn) =>{
+        if(request.status === 200){
+            let audioData = c.getAudioDataFromRespose(request.responseText);
+
+            if(audioData)
+                v.downloadAudio(audioData);
+            else
+                v.showWarning(svkBtn);
+        }
+        else
+            v.showWarning(svkBtn);
+    },
+
+    showWarning: (() =>{
+        let warningTimer;
+
+        return svkBtn =>{
+            clearTimeout(warningTimer);
+
+            svkBtn.classList.remove('svk-btn--icon_warning');
+            svkBtn.classList.add('svk-btn--icon_warning');
+
+            warningTimer = setTimeout(function(){
+                svkBtn.classList.remove('svk-btn--icon_warning');
+            }, 700);
+        };
+    })(),
+
+    downloadAudio: audioData =>{
+        chrome.runtime.sendMessage({
+            action: 'downloadAudio',
+            data: audioData
+        });
     }
 };
 

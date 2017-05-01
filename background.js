@@ -6,3 +6,9 @@ chrome.browserAction.onClicked.addListener(tab =>{
         index: ++tab.index
     });
 });
+
+chrome.runtime.onMessage.addListener(message =>{
+    switch(message.action){
+        case 'downloadAudio' : chrome.downloads.download(message.data);
+    }
+});
