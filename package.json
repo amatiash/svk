@@ -1,9 +1,5 @@
 {
   "name": "svk",
-  "version": "0.1.0",
-  "author": "Anton Matishevich",
-  "dependencies": {
-    "jquery": "^3.0.0"
-  },
-  "devDependencies": {}
+  "version": "0.2.0",
+  "author": "Anton Matishevich"
 }
