@@ -1,0 +1,23 @@
+.audio_download_btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  float: left;
+  width: 34px;
+  height: 34px;
+  margin-right: 5px;
+  border-radius: 2px;
+  background: #e6edf5;
+  border: 0;
+  color: #6f98c7;
+  font-size: 22px;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    //color: #e6edf5;
+    //background: #6f98c7;
+    color: rgb(255, 255, 255);
+    background: rgb(115, 119, 123);
+  }
+}
