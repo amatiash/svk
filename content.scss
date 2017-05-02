@@ -1,116 +1,182 @@
+// Variables
+// ----------------------------------------------------
+
+$rowBtn-bg: #e6edf5;
+$rowBtn-color: #6f98c7;
+
+$rowBtn-bg--hover: #73777b;
+$rowBtn-color--hover: white;
+
+$rowBtn-fontSize: 22px;
+$rowBtn-fontSize--pressed: 19px;
+
+$rowBtnCover-fontSize: 25px;
+$rowBtnCover-fontSize--pressed: 22px;
+
+$rowBtnWarn-bg: #f5c018;
+$rowBtnWarn-color: white;
+
+// Mixins
+// ----------------------------------------------------
+
 @mixin svk-btn {
   display: block !important;
-  float: left !important;
+  float: left;
   position: relative;
-  width: 34px;
-  height: 34px;
-  margin-right: 5px;
-  border-radius: 2px;
-  background: #e6edf5;
   border: 0;
-  font-size: 22px;
   overflow: hidden;
-  color: #6f98c7;
+  cursor: pointer;
   -webkit-font-smoothing: subpixel-antialiased;
 
   .claimed & {
     visibility: hidden;
   }
+
+  &.--error {
+    &::before {
+      transform: translateX(0);
+    }
+    &::after {
+      transform: translateX(100%);
+    }
+  }
 }
 
-@mixin svk-btn-icon {
+@mixin svk-btn--row {
+  width: 34px;
+  height: 34px;
+  margin-right: 5px;
+  border-radius: 2px;
+}
+
+@mixin svk-pseudo-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   position: absolute;
-  font-style: normal;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  border-radius: 2px;
-  transition: color 80ms linear, background 80ms linear, transform .3s;
+  transition: all 80ms linear, transform .3s;
 }
+
+// ----------------------------------------------------
 
 .svk-btn {
   @include svk-btn;
 
-  transition: all 80ms linear;
-  cursor: pointer;
+  &--row {
+    @include svk-btn--row;
 
-  &:active {
-    font-size: 19px;
-  }
+    // Define icons
+    // ----------------------------------------------------
 
-  &--icon_warning {
-    &:active {
-      font-size: 22px;
+    // Error icon
+    &::before {
+      @include svk-pseudo-icon;
+      content: ':(';
+      color: $rowBtnWarn-color;
+      background: $rowBtnWarn-bg;
+      font-size: $rowBtn-fontSize;
+      transform: translateX(-100%);
     }
-  }
 
-  &__arrow {
-    @include svk-btn-icon;
+    // Download icon
+    &::after {
+      @include svk-pseudo-icon;
+      content: '↓';
+      color: $rowBtn-color;
+      background: $rowBtn-bg;
+      font-size: $rowBtn-fontSize;
+    }
+
+    // Hover & active state
+    // ----------------------------------------------------
 
     &:hover {
-      color: white;
-      background: #73777b;
+      &::after {
+        color: $rowBtn-color--hover;
+        background: $rowBtn-bg--hover;
+      }
     }
 
-    .svk-btn--icon_warning & {
-      transform: translateX(100%);
-    }
-  }
-
-  &__warn {
-    @include svk-btn-icon;
-    background: #f5c018;
-    color: white;
-    transform: translateX(-100%);
-
-    .svk-btn--icon_warning & {
-      display: flex;
-      transform: translateX(0);
+    &:active {
+      &::after {
+        font-size: $rowBtn-fontSize--pressed;
+      }
     }
   }
 }
 
-.audio_row .audio_row_counter {
+.audio_page_player__cover {
   @include svk-btn;
 
-  cursor: progress;
+  .audio_layer_container &,
+  .audio_layer_container &::after{
+    border-radius: 0 !important;
+  }
 
+  // Define icons
+  // ----------------------------------------------------
+
+  // Error icon
+  &::before {
+    @include svk-pseudo-icon;
+    content: ':(';
+    color: $rowBtnWarn-color;
+    background: $rowBtnWarn-bg;
+    font-size: $rowBtnCover-fontSize;
+    transform: translateX(-100%);
+  }
+
+  // Download icon
   &::after {
-    @include svk-btn-icon;
+    @include svk-pseudo-icon;
     content: '↓';
+    color: white;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    font-size: $rowBtnCover-fontSize;
+    border-radius: 2px 0 0 2px;
+  }
+
+  // Hover & active state
+  // ----------------------------------------------------
+
+  &:hover {
+    &::after {
+      opacity: 1;
+    }
+  }
+
+  &:active {
+    &::after {
+      font-size: $rowBtnCover-fontSize--pressed;
+    }
   }
 }
 
+// Overrides
+// ----------------------------------------------------
+
+// Fix progress line left
 .audio_inline_player {
   left: 39px + 34px + 5px !important;
 }
 
-.audio_page_player__cover {
-  position: relative;
-  transition: all 80ms linear;
-  cursor: pointer;
+// Imitate loaded svk btn
+.audio_row .audio_row_counter {
+  @include svk-btn;
+  @include svk-btn--row;
 
-  &:active::after {
-    font-size: 22px;
-  }
-
-  &:hover::after {
-    color: white;
-    background: rgba(0, 0, 0, 0.4);
-  }
+  cursor: progress;
 
   &::after {
-    @include svk-btn-icon;
-    transition: all 80ms linear;
+    @include svk-pseudo-icon;
     content: '↓';
-    color: transparent;
-    background: transparent;
-    font-size: 25px;
-    border-radius: 2px 0 0 2px;
-    -webkit-font-smoothing: subpixel-antialiased;
+    background: $rowBtn-bg;
+    font-size: $rowBtn-fontSize;
+    color: $rowBtn-color;
   }
 }

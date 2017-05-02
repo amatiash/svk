@@ -8,7 +8,7 @@ let m, v, c;
 m = {
     audioRows        : document.body.getElementsByClassName('audio_row'),
     audioPlayers     : document.body.getElementsByClassName('audio_page_player'),
-    svkBtnHtml       : '<div class="svk-btn"><i class="svk-btn__arrow">↓</i><i class="svk-btn__warn">:(</i></div>',
+    svkBtnHtml       : '<div class="svk-btn svk-btn--row"></div>',
     checkInterval    : 500,
     lastAudioRowsHash: null,
 
@@ -160,6 +160,7 @@ v = {
                 if(audioRowCounter)
                     audioRowCounter.style.setProperty('display', 'none', 'important');
 
+                // Write id to button and bind event
                 {
                     let svkBtn = audioRowInner.firstElementChild;
 
@@ -175,8 +176,7 @@ v = {
         let audioRow  = this,
             isPlaying = audioRow.classList.contains('audio_row_playing');
 
-        console.log(m.audioPlayer);
-
+        console.log(m.audioPlayer, isPlaying);
     },
 
     onSvkBtnClick: function(e){
@@ -189,12 +189,12 @@ v = {
         // ----------------------------------------------------
 
         // Quit if warning is showing
-        if(svkBtn.classList.contains('svk-btn--icon_warning'))
+        if(svkBtn.classList.contains('--error'))
             return;
 
         // ----------------------------------------------------
 
-        request.open('POST', '/al_audio.php2');
+        request.open('POST', '/al_audio.php');
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         request.addEventListener('load', () => v.onAudioDataReceived(request, svkBtn));
         request.addEventListener('error', () => v.showWarning(svkBtn));
@@ -222,11 +222,11 @@ v = {
         return svkBtn =>{
             clearTimeout(warningTimer);
 
-            svkBtn.classList.remove('svk-btn--icon_warning');
-            svkBtn.classList.add('svk-btn--icon_warning');
+            svkBtn.classList.remove('--error');
+            svkBtn.classList.add('--error');
 
             warningTimer = setTimeout(function(){
-                svkBtn.classList.remove('svk-btn--icon_warning');
+                svkBtn.classList.remove('--error');
             }, 700);
         };
     })()
