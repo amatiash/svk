@@ -103,7 +103,7 @@
   .audio_page_player__cover:hover::after {
     opacity: 1; }
   .audio_page_player__cover:active::after {
-    font-size: 22px; }
+    font-size: 21px; }
 
 .audio_inline_player {
   left: 78px !important; }

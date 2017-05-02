@@ -7,12 +7,22 @@ let m, v, c;
 
 m = {
     audioRows        : document.body.getElementsByClassName('audio_row'),
-    audioPlayers     : document.body.getElementsByClassName('audio_page_player'),
     svkBtnHtml       : '<div class="svk-btn svk-btn--row"></div>',
     checkInterval    : 500,
     lastAudioRowsHash: null,
 
-    getAudioId: audioRow => audioRow.getAttribute('data-full-id'),
+    getAudioIdFromRow: audioRow => audioRow.getAttribute('data-full-id'),
+
+    getCurrentAudioId: () =>{
+        try {
+            let audioDataArr = JSON.parse(localStorage.getItem('audio_v20_track'));
+            return audioDataArr[1] + '_' + audioDataArr[0];
+
+        } catch(e){
+            console.warn("[svk]: Couldn't get current audio id");
+            console.error(e);
+        }
+    },
 
     getAudioRowsHash: () =>{
         let length = m.audioRows.length,
@@ -23,7 +33,7 @@ m = {
                 break;
             case 1 :{
                 let firstEl     = m.audioRows[0],
-                    firstElHash = m.isSvkBtnAdded(firstEl) + m.getAudioId(firstEl);
+                    firstElHash = m.isSvkBtnAdded(firstEl) + m.getAudioIdFromRow(firstEl);
 
                 hash += `-${firstElHash}`;
                 break;
@@ -32,8 +42,8 @@ m = {
             case 2 :
                 let firstEl     = m.audioRows[0],
                     lastEl      = m.audioRows[length - 1],
-                    firstElHash = m.isSvkBtnAdded(firstEl) + m.getAudioId(firstEl),
-                    lastElHash  = m.isSvkBtnAdded(lastEl) + m.getAudioId(lastEl);
+                    firstElHash = m.isSvkBtnAdded(firstEl) + m.getAudioIdFromRow(firstEl),
+                    lastElHash  = m.isSvkBtnAdded(lastEl) + m.getAudioIdFromRow(lastEl);
 
                 hash += `-${firstElHash}-${lastElHash}`;
                 break;
@@ -42,9 +52,9 @@ m = {
                 let firstEl      = m.audioRows[0],
                     middleEl     = m.audioRows[Math.round(length / 2) - 1],
                     lastEl       = m.audioRows[length - 1],
-                    firstElHash  = m.isSvkBtnAdded(firstEl) + m.getAudioId(firstEl),
-                    middleElHash = m.isSvkBtnAdded(middleEl) + m.getAudioId(middleEl),
-                    lastElHash   = m.isSvkBtnAdded(lastEl) + m.getAudioId(lastEl);
+                    firstElHash  = m.isSvkBtnAdded(firstEl) + m.getAudioIdFromRow(firstEl),
+                    middleElHash = m.isSvkBtnAdded(middleEl) + m.getAudioIdFromRow(middleEl),
+                    lastElHash   = m.isSvkBtnAdded(lastEl) + m.getAudioIdFromRow(lastEl);
 
                 hash += `-${firstElHash}-${middleElHash}-${lastElHash}`;
                 break;
@@ -82,13 +92,13 @@ m = {
         }
     },
 
+    getIdRequestBody: audioId => 'act=reload_audio&al=1&ids=' + audioId,
+
     decodeHtml: html =>{
         let txt       = document.createElement("textarea");
         txt.innerHTML = html;
         return txt.value;
-    },
-
-    get audioPlayer(){ return m.audioPlayers[0] }
+    }
 };
 
 // Controller
@@ -116,10 +126,22 @@ c = {
         });
     },
 
-    getAudioId             : m.getAudioId,
+    sendGetAudioDataRequest: (body, onLoad, onError) =>{
+        let request = new XMLHttpRequest();
+
+        request.open('POST', '/al_audio.php');
+        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        request.addEventListener('load', () => onLoad(request));
+        request.addEventListener('error', onError);
+        request.send(body);
+    },
+
+    getAudioIdFromRow      : m.getAudioIdFromRow,
     isSvkBtnAdded          : m.isSvkBtnAdded,
     getAfterSvkBtnCounter  : m.getAfterSvkBtnCounter,
     getAudioDataFromRespose: m.getAudioDataFromRespose,
+    getCurrentAudioId      : m.getCurrentAudioId,
+    getIdRequestBody       : m.getIdRequestBody,
 
     get audioRows(){ return m.audioRows },
     get svkBtnHtml(){ return m.svkBtnHtml },
@@ -134,6 +156,9 @@ v = {
     init: () =>{
         v.render();
         setInterval(c.watchAudioRowsChange, c.checkInterval);
+
+        // Track audio cover click
+        document.addEventListener('click', v.onPlayerCoverClick);
     },
 
     render: function(){
@@ -142,91 +167,124 @@ v = {
         if(!c.audioRows.length)
             return;
 
-        // Add download buttons, bind click enent
+        // Add download buttons, bind click event
         [].forEach.call(c.audioRows, audioRow =>{
             let audioRowInner = audioRow.children[0];
 
-            audioRow.addEventListener('click', v.onAudioRowClick);
+            // Quit if button has been already added
+            // ----------------------------------------------------
 
-            // If button not added
-            if(!c.isSvkBtnAdded(audioRow)){
+            if(c.isSvkBtnAdded(audioRow))
+                return;
 
-                let audioRowCounter = c.getAfterSvkBtnCounter(audioRowInner);
+            // ----------------------------------------------------
 
-                // Insert button
-                audioRowInner.insertAdjacentHTML('afterbegin', c.svkBtnHtml);
+            let audioRowCounter = c.getAfterSvkBtnCounter(audioRowInner);
 
-                // Hide .audio_row_counter
-                if(audioRowCounter)
-                    audioRowCounter.style.setProperty('display', 'none', 'important');
+            // Insert button
+            audioRowInner.insertAdjacentHTML('afterbegin', c.svkBtnHtml);
 
-                // Write id to button and bind event
-                {
-                    let svkBtn = audioRowInner.firstElementChild;
+            // Hide .audio_row_counter
+            if(audioRowCounter)
+                audioRowCounter.style.setProperty('display', 'none', 'important');
 
-                    svkBtn.setAttribute('data-svk-id', c.getAudioId(audioRow));
-                    svkBtn.addEventListener('click', v.onSvkBtnClick);
-                }
+            // Write id to button and bind event
+            {
+                let svkBtn = audioRowInner.firstElementChild;
 
+                svkBtn.setAttribute('data-svk-id', c.getAudioIdFromRow(audioRow));
+                svkBtn.addEventListener('click', v.onSvkBtnClick);
             }
         });
     },
 
-    onAudioRowClick: function(){
-        let audioRow  = this,
-            isPlaying = audioRow.classList.contains('audio_row_playing');
+    onPlayerCoverClick: function(e){
+        let coverBtn      = e.target,
+            isDiv         = coverBtn.nodeName === 'DIV',
+            isPlayerCover = coverBtn.classList.contains('audio_page_player__cover'),
+            audioId;
 
-        console.log(m.audioPlayer, isPlaying);
+        // ----------------------------------------------------
+
+        // Quit if clicked outside player cover
+        if(!(isDiv && isPlayerCover))
+            return;
+
+        // Quit if warning is showing
+        if(coverBtn.classList.contains('--error'))
+            return;
+
+        // ----------------------------------------------------
+
+        audioId = c.getCurrentAudioId();
+
+        // If couldn't get audio id
+        if(!audioId){
+            v.showWarning(coverBtn);
+            return;
+        }
+
+        // Send request
+        // ----------------------------------------------------
+
+        c.sendGetAudioDataRequest(
+            c.getIdRequestBody(audioId),                            // requestBody
+            request => v.onAudioDataReceived(request, coverBtn),    // onLoad
+            () => v.showWarning(coverBtn)                           // onError
+        );
     },
 
     onSvkBtnClick: function(e){
         e.stopPropagation();
 
-        let svkBtn      = this,
-            request     = new XMLHttpRequest(),
-            requestBody = 'act=reload_audio&al=1&ids=' + svkBtn.getAttribute('data-svk-id');
-
-        // ----------------------------------------------------
+        let svkBtn = this;
 
         // Quit if warning is showing
+        // ----------------------------------------------------
+
         if(svkBtn.classList.contains('--error'))
             return;
 
+        // Send request
         // ----------------------------------------------------
 
-        request.open('POST', '/al_audio.php');
-        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        request.addEventListener('load', () => v.onAudioDataReceived(request, svkBtn));
-        request.addEventListener('error', () => v.showWarning(svkBtn));
-        request.send(requestBody);
-
-        // ----------------------------------------------------
+        c.sendGetAudioDataRequest(
+            c.getIdRequestBody(svkBtn.getAttribute('data-svk-id')), // requestBody
+            request => v.onAudioDataReceived(request, svkBtn),      // onLoad
+            () => v.showWarning(svkBtn)                             // onError
+        );
     },
 
-    onAudioDataReceived: (request, svkBtn) =>{
-        if(request.status === 200){
-            let audioData = c.getAudioDataFromRespose(request.responseText);
+    onAudioDataReceived: (request, btn) =>{
 
-            if(audioData)
-                c.downloadAudio(audioData);
-            else
-                v.showWarning(svkBtn);
-        }
+        // Quit if request was not successfull
+        // ----------------------------------------------------
+
+        if(request.status !== 200)
+            return v.showWarning(btn);
+
+        // ----------------------------------------------------
+
+        let audioData = c.getAudioDataFromRespose(request.responseText);
+
+        if(audioData)
+            c.downloadAudio(audioData);
         else
-            v.showWarning(svkBtn);
+            v.showWarning(btn);
+
     },
 
     showWarning: (() =>{
         let warningTimer;
 
-        return svkBtn =>{
+        return btn =>{
             clearTimeout(warningTimer);
 
-            svkBtn.classList.remove('--error');
-            svkBtn.classList.add('--error');
+            btn.classList.remove('--error');
+            btn.classList.add('--error');
 
             warningTimer = setTimeout(function(){
-                svkBtn.classList.remove('--error');
+                btn.classList.remove('--error');
             }, 700);
         };
     })()
