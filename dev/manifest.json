@@ -2,11 +2,11 @@
   "manifest_version": 2,
   "name": "Скачать музыку с вк",
   "description": "Самая удобная и быстрая качалка музыки vk! Качай музыку с котейкой 🙂",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
+    "16": "img/icon16.png",
+    "48": "img/icon48.png",
+    "128": "img/icon128.png"
   },
   "content_scripts": [
     {
@@ -14,10 +14,10 @@
         "https://vk.com/*"
       ],
       "js": [
-        "content.js"
+        "js/content.js"
       ],
       "css": [
-        "content.css"
+        "css/content.css"
       ]
     }
   ],
@@ -29,11 +29,11 @@
   ],
   "background": {
     "scripts": [
-      "background.js"
+      "js/background.js"
     ]
   },
   "browser_action": {
     "default_title": "Открыть мои аудиозаписи",
-    "default_icon": "icon16.png"
+    "default_icon": "img/icon16.png"
   }
 }

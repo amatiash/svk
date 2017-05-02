@@ -26,6 +26,7 @@ $rowBtnWarn-color: white;
   border: 0;
   overflow: hidden;
   cursor: pointer;
+  user-select: none;
   -webkit-font-smoothing: subpixel-antialiased;
 
   .claimed & {
@@ -65,46 +66,43 @@ $rowBtnWarn-color: white;
 
 .svk-btn {
   @include svk-btn;
+  @include svk-btn--row;
 
-  &--row {
-    @include svk-btn--row;
+  // Define icons
+  // ----------------------------------------------------
 
-    // Define icons
-    // ----------------------------------------------------
+  // Error icon
+  &::before {
+    @include svk-pseudo-icon;
+    content: ':(';
+    color: $rowBtnWarn-color;
+    background: $rowBtnWarn-bg;
+    font-size: $rowBtn-fontSize;
+    transform: translateX(-100%);
+  }
 
-    // Error icon
-    &::before {
-      @include svk-pseudo-icon;
-      content: ':(';
-      color: $rowBtnWarn-color;
-      background: $rowBtnWarn-bg;
-      font-size: $rowBtn-fontSize;
-      transform: translateX(-100%);
-    }
+  // Download icon
+  &::after {
+    @include svk-pseudo-icon;
+    content: '↓';
+    color: $rowBtn-color;
+    background: $rowBtn-bg;
+    font-size: $rowBtn-fontSize;
+  }
 
-    // Download icon
+  // Hover & active state
+  // ----------------------------------------------------
+
+  &:hover {
     &::after {
-      @include svk-pseudo-icon;
-      content: '↓';
-      color: $rowBtn-color;
-      background: $rowBtn-bg;
-      font-size: $rowBtn-fontSize;
+      color: $rowBtn-color--hover;
+      background: $rowBtn-bg--hover;
     }
+  }
 
-    // Hover & active state
-    // ----------------------------------------------------
-
-    &:hover {
-      &::after {
-        color: $rowBtn-color--hover;
-        background: $rowBtn-bg--hover;
-      }
-    }
-
-    &:active {
-      &::after {
-        font-size: $rowBtn-fontSize--pressed;
-      }
+  &:active {
+    &::after {
+      font-size: $rowBtn-fontSize--pressed;
     }
   }
 }
@@ -113,7 +111,7 @@ $rowBtnWarn-color: white;
   @include svk-btn;
 
   .audio_layer_container &,
-  .audio_layer_container &::after{
+  .audio_layer_container &::after {
     border-radius: 0 !important;
   }
 
