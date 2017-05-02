@@ -11,19 +11,9 @@ const BUILD = './build/';
 
 // ----------------------------------------------------
 
-gulp.task('build', ['build:manifest', 'build:copy-img', 'build:js', 'build:styles']);
+gulp.task('build', ['build:copy', 'build:js', 'build:styles']);
 
 // ----------------------------------------------------
-
-gulp.task('build:manifest', () =>
-    gulp.src(DEV + 'manifest.json')
-        .pipe(gulp.dest(BUILD))
-);
-
-gulp.task('build:copy-img', () =>
-    gulp.src(DEV + 'img/*.png')
-        .pipe(gulp.dest(BUILD + 'img'))
-);
 
 gulp.task('build:js', () =>
     gulp.src(DEV + 'js/*.js')
@@ -38,3 +28,24 @@ gulp.task('build:styles', function(){
         .pipe(sass({outputStyle: 'compressed'}).on('error', sass.logError))
         .pipe(gulp.dest(BUILD + 'css'));
 });
+
+// ----------------------------------------------------
+
+gulp.task('build:copy', ['build:copy-manifest', 'build:copy-img', 'build:copy-locales']);
+
+gulp.task('build:copy-manifest', () =>
+    gulp.src(DEV + 'manifest.json')
+        .pipe(gulp.dest(BUILD))
+);
+
+gulp.task('build:copy-locales', () =>
+    gulp.src(DEV + '_locales/**/*')
+        .pipe(gulp.dest(BUILD + '_locales'))
+);
+
+gulp.task('build:copy-img', () =>
+    gulp.src(DEV + 'img/*.png')
+        .pipe(gulp.dest(BUILD + 'img'))
+);
+
+// ----------------------------------------------------
