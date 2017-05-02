@@ -39,12 +39,12 @@
   cursor: pointer;
 
   &:active {
-    transform: scale(.9);
+    font-size: 19px;
   }
 
   &--icon_warning {
     &:active {
-      transform: none;
+      font-size: 22px;
     }
   }
 
@@ -87,4 +87,30 @@
 
 .audio_inline_player {
   left: 39px + 34px + 5px !important;
+}
+
+.audio_page_player__cover {
+  position: relative;
+  transition: all 80ms linear;
+  cursor: pointer;
+
+  &:active::after {
+    font-size: 22px;
+  }
+
+  &:hover::after {
+    color: white;
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  &::after {
+    @include svk-btn-icon;
+    transition: all 80ms linear;
+    content: '↓';
+    color: transparent;
+    background: transparent;
+    font-size: 25px;
+    border-radius: 2px 0 0 2px;
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
 }

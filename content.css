@@ -18,9 +18,9 @@
   .claimed .svk-btn {
     visibility: hidden; }
   .svk-btn:active {
-    transform: scale(0.9); }
+    font-size: 19px; }
   .svk-btn--icon_warning:active {
-    transform: none; }
+    font-size: 22px; }
   .svk-btn__arrow {
     display: flex;
     align-items: center;
@@ -90,5 +90,34 @@
 
 .audio_inline_player {
   left: 78px !important; }
+
+.audio_page_player__cover {
+  position: relative;
+  transition: all 80ms linear;
+  cursor: pointer; }
+  .audio_page_player__cover:active::after {
+    font-size: 22px; }
+  .audio_page_player__cover:hover::after {
+    color: white;
+    background: rgba(0, 0, 0, 0.4); }
+  .audio_page_player__cover::after {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    font-style: normal;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 2px;
+    transition: color 80ms linear, background 80ms linear, transform .3s;
+    transition: all 80ms linear;
+    content: '↓';
+    color: transparent;
+    background: transparent;
+    font-size: 25px;
+    border-radius: 2px 0 0 2px;
+    -webkit-font-smoothing: subpixel-antialiased; }
 
 /*# sourceMappingURL=content.css.map */

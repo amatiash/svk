@@ -7,8 +7,9 @@ let m, v, c;
 
 m = {
     audioRows        : document.body.getElementsByClassName('audio_row'),
+    audioPlayers     : document.body.getElementsByClassName('audio_page_player'),
     svkBtnHtml       : '<div class="svk-btn"><i class="svk-btn__arrow">↓</i><i class="svk-btn__warn">:(</i></div>',
-    checkInterval    : 1000,
+    checkInterval    : 500,
     lastAudioRowsHash: null,
 
     getAudioId: audioRow => audioRow.getAttribute('data-full-id'),
@@ -71,7 +72,7 @@ m = {
                 linkURL      = new URL(audioDataArr[2]);
 
             return {
-                url: linkURL.origin + linkURL.pathname,
+                url     : linkURL.origin + linkURL.pathname,
                 filename: m.decodeHtml(`${audioDataArr[4]} - ${audioDataArr[3]}.mp3`)
             }
 
@@ -82,10 +83,12 @@ m = {
     },
 
     decodeHtml: html =>{
-        let txt = document.createElement("textarea");
+        let txt       = document.createElement("textarea");
         txt.innerHTML = html;
         return txt.value;
-    }
+    },
+
+    get audioPlayer(){ return m.audioPlayers[0] }
 };
 
 // Controller
@@ -104,6 +107,13 @@ c = {
             v.render();
             m.lastAudioRowsHash = m.getAudioRowsHash();
         }
+    },
+
+    downloadAudio: audioData =>{
+        chrome.runtime.sendMessage({
+            action: 'downloadAudio',
+            data  : audioData
+        });
     },
 
     getAudioId             : m.getAudioId,
@@ -136,6 +146,8 @@ v = {
         [].forEach.call(c.audioRows, audioRow =>{
             let audioRowInner = audioRow.children[0];
 
+            audioRow.addEventListener('click', v.onAudioRowClick);
+
             // If button not added
             if(!c.isSvkBtnAdded(audioRow)){
 
@@ -159,6 +171,14 @@ v = {
         });
     },
 
+    onAudioRowClick: function(){
+        let audioRow  = this,
+            isPlaying = audioRow.classList.contains('audio_row_playing');
+
+        console.log(m.audioPlayer);
+
+    },
+
     onSvkBtnClick: function(e){
         e.stopPropagation();
 
@@ -174,7 +194,7 @@ v = {
 
         // ----------------------------------------------------
 
-        request.open('POST', '/al_audio.php');
+        request.open('POST', '/al_audio.php2');
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         request.addEventListener('load', () => v.onAudioDataReceived(request, svkBtn));
         request.addEventListener('error', () => v.showWarning(svkBtn));
@@ -188,7 +208,7 @@ v = {
             let audioData = c.getAudioDataFromRespose(request.responseText);
 
             if(audioData)
-                v.downloadAudio(audioData);
+                c.downloadAudio(audioData);
             else
                 v.showWarning(svkBtn);
         }
@@ -209,14 +229,7 @@ v = {
                 svkBtn.classList.remove('svk-btn--icon_warning');
             }, 700);
         };
-    })(),
-
-    downloadAudio: audioData =>{
-        chrome.runtime.sendMessage({
-            action: 'downloadAudio',
-            data: audioData
-        });
-    }
+    })()
 };
 
 // ----------------------------------------------------
