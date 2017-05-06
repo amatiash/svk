@@ -1,3 +1,12 @@
+// Functions
+// ----------------------------------------------------
+
+@function bg-icon($color, $size){
+  $start: '<svg xmlns="http://www.w3.org/2000/svg" width="#{$size}" height="#{$size}" viewBox="-6.5 -7 30 30">';
+  $end: '<path fill="#{$color}" d="M12.5 8.6L9 12.2V0H7v12.2L3.5 8.6l-1.4 1.5L8 16l5.9-5.9z"/></svg>';
+  @return url('data:image/svg+xml;utf8,'+ $start + $end);
+}
+
 // Variables
 // ----------------------------------------------------
 
@@ -16,6 +25,12 @@ $rowBtnCover-fontSize--pressed: 21px;
 $rowBtnWarn-bg: #f5c018;
 $rowBtnWarn-color: white;
 
+$rowBtn-img: bg-icon($rowBtn-color, 34px);
+$rowBtn-img--hover: bg-icon($rowBtn-color--hover, 34px);
+$rowBtn-img--active: bg-icon($rowBtn-color--hover, 40px);
+
+$rowBtnCover-img: bg-icon(white, 54px);
+
 // Mixins
 // ----------------------------------------------------
 
@@ -28,9 +43,15 @@ $rowBtnWarn-color: white;
   cursor: pointer;
   user-select: none;
   -webkit-font-smoothing: subpixel-antialiased;
+  transition: all 80ms linear, transform .3s;
 
   .claimed & {
-    visibility: hidden;
+    &:hover {
+      background-color: $rowBtn-bg;
+    }
+    &::after {
+      display: none;
+    }
   }
 
   &.--error {
@@ -67,6 +88,7 @@ $rowBtnWarn-color: white;
 .svk-btn {
   @include svk-btn;
   @include svk-btn--row;
+  background-color: $rowBtn-bg;
 
   // Define icons
   // ----------------------------------------------------
@@ -84,25 +106,25 @@ $rowBtnWarn-color: white;
   // Download icon
   &::after {
     @include svk-pseudo-icon;
-    content: '↓';
-    color: $rowBtn-color;
-    background: $rowBtn-bg;
-    font-size: $rowBtn-fontSize;
+    content: '';
+    background: $rowBtn-img no-repeat;
+    background-size: 100%;
   }
 
   // Hover & active state
   // ----------------------------------------------------
 
   &:hover {
+    background-color: $rowBtn-bg--hover;
     &::after {
-      color: $rowBtn-color--hover;
-      background: $rowBtn-bg--hover;
+      background: $rowBtn-img--hover no-repeat;
     }
   }
 
   &:active {
     &::after {
-      font-size: $rowBtn-fontSize--pressed;
+      transition: none;
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.4);
     }
   }
 }
@@ -131,12 +153,11 @@ $rowBtnWarn-color: white;
   // Download icon
   &::after {
     @include svk-pseudo-icon;
-    content: '↓';
-    color: white;
-    background: rgba(0, 0, 0, 0.4);
+    content: '';
     opacity: 0;
-    font-size: $rowBtnCover-fontSize;
     border-radius: 2px 0 0 2px;
+    background: rgba(0, 0, 0, 0.4) $rowBtnCover-img 50% 50% no-repeat;
+    background-size: 80%;
   }
 
   // Hover & active state
@@ -150,7 +171,8 @@ $rowBtnWarn-color: white;
 
   &:active {
     &::after {
-      font-size: $rowBtnCover-fontSize--pressed;
+      transition: none;
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.4);
     }
   }
 }
@@ -164,17 +186,25 @@ $rowBtnWarn-color: white;
 }
 
 // Imitate loaded svk btn
-.audio_row .audio_row_counter {
-  @include svk-btn;
-  @include svk-btn--row;
+.audio_row_cover_wrap {
+  $coverWidth: 34px;
+  $coverMargin: 5px;
 
-  cursor: progress;
+  margin-right: $coverWidth + $coverMargin * 2 !important;
+  overflow: inherit !important;
 
   &::after {
     @include svk-pseudo-icon;
-    content: '↓';
-    background: $rowBtn-bg;
-    font-size: $rowBtn-fontSize;
-    color: $rowBtn-color;
+    content: '';
+    cursor: progress;
+    position: absolute;
+    left: $coverWidth + $coverMargin;
+    background: $rowBtn-bg $rowBtn-img no-repeat;
+    background-size: 100%;
+  }
+
+  .svk-btn-added & {
+    margin-right: $coverMargin !important;
+    overflow: hidden !important;
   }
 }
