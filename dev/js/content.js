@@ -1,14 +1,13 @@
 'use strict';
 
-// TODO Add bitrate and fise size
-// TODO Convert to Promise
+// TODO Add bitrate and file size
+// TODO Fix player jump
 
 // Model
 // ----------------------------------------------------
 
 let m_audioRows         = document.body.getElementsByClassName('audio_row'),
     m_svkBtnHtml        = '<div class="svk-btn"></div>',
-    m_checkInterval     = 500,
     m_lastAudioRowsHash = null,
 
     m_getAudioRowsHash  = () =>{
@@ -79,36 +78,40 @@ let c_init                    = () => v_init(),
         }
     },
 
-    c_downloadAudio           = audioData =>{
-        chrome.runtime.sendMessage({
-            action: 'downloadAudio',
-            data  : audioData
-        });
-    },
-
-    c_sendGetAudioDataRequest = (body, onLoad, onError) =>{
+    c_getAudioData            = audioId => new Promise((resolve, reject) =>{
         let request = new XMLHttpRequest();
 
         request.open('POST', '/al_audio.php');
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        request.addEventListener('load', () => onLoad(request));
-        request.addEventListener('error', onError);
-        request.send(body);
-    },
+        request.addEventListener('load', onLoad);
+        request.addEventListener('error', reject);
+        request.send('act=reload_audio&al=1&ids=' + audioId);
 
-    c_insertAfter             = (elem, refElem) => refElem.parentNode.insertBefore(elem, refElem.nextSibling),
+        // ----------------------------------------------------
 
-    c_isSvkBtnAdded           = audioRow => audioRow.classList.contains('svk-btn-added'),
+        function onLoad(){
+            // Quit if request was not successfull
+            if(request.status !== 200){
+                console.warn("[svk]: Couldn't get data - request status not 200");
+                reject();
+                return;
+            }
 
-    c_getAudioIdFromRow       = audioRow => audioRow.getAttribute('data-full-id'),
+            let audioData = c_getAudioDataFromRespose(request.responseText);
 
-    c_getAudioRowCover        = audioRow => audioRow.querySelector('.audio_row_inner > .audio_row_cover_wrap'),
+            // Quit if no audio data
+            if(!audioData){
+                reject();
+                return;
+            }
 
-    c_getIdRequestBody        = audioId => 'act=reload_audio&al=1&ids=' + audioId,
+            resolve(audioData);
+        }
+    }),
 
-    c_getAudioDataFromRespose = data =>{
+    c_getAudioDataFromRespose = responseText =>{
         try {
-            let jsonString     = data.split('<!json>')[1].split('<!>')[0],
+            let jsonString     = responseText.split('<!json>')[1].split('<!>')[0],
                 audioDataArr   = JSON.parse(jsonString)[0],
                 linkURL        = new URL(audioDataArr[2]),
                 filenameUnsafe = `${audioDataArr[4]} - ${audioDataArr[3]}.mp3`,
@@ -121,18 +124,31 @@ let c_init                    = () => v_init(),
 
         } catch(e){
             console.warn("[svk]: Couldn't get url from data");
-            console.error(e);
         }
     },
 
+    c_insertAfter             = (elem, refElem) => refElem.parentNode.insertBefore(elem, refElem.nextSibling),
+
+    c_isSvkBtnAdded           = audioRow => audioRow.classList.contains('svk-btn-added'),
+
+    c_getAudioIdFromRow       = audioRow => audioRow.getAttribute('data-full-id'),
+
+    c_getAudioRowCover        = audioRow => audioRow.querySelector('.audio_row_inner > .audio_row_cover_wrap'),
+
     c_getCurrentAudioId       = () =>{
         try {
-            let audioDataArr = JSON.parse(localStorage.getItem('audio_v20_track'));
+            let storageAudioData = localStorage.getItem('audio_v20_track');
+
+            if(!storageAudioData){
+                console.warn("[svk]: No current audio data in storage");
+                return;
+            }
+
+            let audioDataArr = JSON.parse(storageAudioData);
             return audioDataArr[1] + '_' + audioDataArr[0];
 
         } catch(e){
-            console.warn("[svk]: Couldn't get current audio id");
-            console.error(e);
+            console.warn("[svk]: Couldn't get current audio id from data");
         }
     },
 
@@ -140,20 +156,25 @@ let c_init                    = () => v_init(),
 
     c_getAudioRows            = () => m_audioRows,
 
-    c_CheckInterval           = () => m_checkInterval;
+    c_downloadAudio           = audioData =>{
+        chrome.runtime.sendMessage({
+            action: 'downloadAudio',
+            data  : audioData
+        });
+    };
 
 // View
 // ----------------------------------------------------
 
-let v_init                = () =>{
+let v_init               = () =>{
         v_render();
-        setInterval(c_watchAudioRowsChange, c_CheckInterval());
+        setInterval(c_watchAudioRowsChange, 500);
 
         // Track audio cover click
         document.addEventListener('click', v_onPlayerCoverClick);
     },
 
-    v_render              = () =>{
+    v_render             = () =>{
 
         // Quit if no items to render
         if(!c_getAudioRows().length)
@@ -163,7 +184,7 @@ let v_init                = () =>{
         [].forEach.call(c_getAudioRows(), v_addSvkBtn);
     },
 
-    v_addSvkBtn           = audioRow =>{
+    v_addSvkBtn          = audioRow =>{
 
         // Quit if button has been already added
         if(c_isSvkBtnAdded(audioRow))
@@ -185,7 +206,7 @@ let v_init                = () =>{
         svkBtn.addEventListener('click', v_onSvkBtnClick);
     },
 
-    v_onPlayerCoverClick  = function(e){
+    v_onPlayerCoverClick = function(e){
         let coverBtn      = e.target,
             isDiv         = coverBtn.nodeName === 'DIV',
             isPlayerCover = coverBtn.classList.contains('audio_page_player__cover'),
@@ -211,17 +232,16 @@ let v_init                = () =>{
             return;
         }
 
-        // Send request
+        // Get data -> download
         // ----------------------------------------------------
 
-        c_sendGetAudioDataRequest(
-            c_getIdRequestBody(audioId),                            // requestBody
-            request => v_onAudioDataReceived(request, coverBtn),    // onLoad
-            () => v_showWarning(coverBtn)                           // onError
+        c_getAudioData(audioId).then(
+            audioData => c_downloadAudio(audioData),
+            () => v_showWarning(coverBtn)
         );
     },
 
-    v_onSvkBtnClick       = function(e){
+    v_onSvkBtnClick      = function(e){
         e.stopPropagation();
 
         let svkBtn = this;
@@ -232,48 +252,25 @@ let v_init                = () =>{
         if(svkBtn.classList.contains('--error'))
             return;
 
-        // Send request
+        // Get data -> download
         // ----------------------------------------------------
 
-        c_sendGetAudioDataRequest(
-            c_getIdRequestBody(svkBtn.getAttribute('data-svk-id')), // requestBody
-            request => v_onAudioDataReceived(request, svkBtn),      // onLoad
-            () => v_showWarning(svkBtn)                             // onError
+        c_getAudioData(svkBtn.getAttribute('data-svk-id')).then(
+            audioData => c_downloadAudio(audioData),
+            () => v_showWarning(svkBtn)
         );
     },
 
-    v_onAudioDataReceived = (request, btn) =>{
+    v_showWarning        = btn =>{
+        clearTimeout(btn.svkWarningTimer);
 
-        // Quit if request was not successfull
-        // ----------------------------------------------------
+        btn.classList.remove('--error');
+        btn.classList.add('--error');
 
-        if(request.status !== 200)
-            return v_showWarning(btn);
-
-        // ----------------------------------------------------
-
-        let audioData = c_getAudioDataFromRespose(request.responseText);
-
-        if(audioData)
-            c_downloadAudio(audioData);
-        else
-            v_showWarning(btn);
-    },
-
-    v_showWarning         = (() =>{
-        let warningTimer;
-
-        return btn =>{
-            clearTimeout(warningTimer);
-
+        btn.svkWarningTimer = setTimeout(function(){
             btn.classList.remove('--error');
-            btn.classList.add('--error');
-
-            warningTimer = setTimeout(function(){
-                btn.classList.remove('--error');
-            }, 700);
-        };
-    })();
+        }, 700);
+    };
 
 // ----------------------------------------------------
 
