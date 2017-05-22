@@ -2,59 +2,12 @@
 
 // TODO Add bitrate and file size
 // TODO Fix player jump
-
-// ----------------------------------------------------
-
-function e(t){
-    if(~t.indexOf("audio_api_unavailable")){
-        var i   = t.split("?extra=")[1].split("#")
-            , e = o(i[1]);
-        if(i = o(i[0]),
-            !e || !i)
-            return t;
-        e = e.split(String.fromCharCode(9));
-        for(var a, r, l = e.length; l--;){
-            if(r = e[l].split(String.fromCharCode(11)),
-                    a = r.splice(0, 1, i)[0],
-                    !s[a])
-                return t;
-            i = s[a].apply(null, r)
-        }
-        if(i && "http" === i.substr(0, 4))
-            return i
-    }
-    return t
-}
-function o(t){
-    if(!t || t.length % 4 == 1)
-        return !1;
-    for(var i, e, o = 0, s = 0, r = ""; e = t.charAt(s++);)
-        e = a.indexOf(e),
-        ~e && (i = o % 4 ? 64 * i + e : e,
-        o++ % 4) && (r += String.fromCharCode(255 & i >> (-2 * o & 6)));
-    return r
-}
-var a   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN0PQRSTUVWXYZO123456789+/="
-    , s = {
-    v: function(t){
-        return t.split("").reverse().join("")
-    },
-    r: function(t, i){
-        t = t.split("");
-        for(var e, o = a + a, s = t.length; s--;)
-            e = o.indexOf(t[s]),
-            ~e && (t[s] = o.substr(e - i, 1));
-        return t.join("")
-    },
-    x: function(t, i){
-        var e = [];
-        return i = i.charCodeAt(0),
-            t.split("").forEach(function(o){
-                e.push(String.fromCharCode(o.charCodeAt(0) ^ i))
-            }),
-            e.join("")
-    }
-}
+// TODO Add cat api
+// TODO Pause listener on page inactive
+// TODO Поправить логотипчик котейки
+// TODO Fix bug on file name change
+// TODO Handle multiple downloads at the same time
+// TODO Hide on audio delete/show on restore
 
 // Model
 // ----------------------------------------------------
@@ -114,7 +67,70 @@ let m_audioRows         = document.body.getElementsByClassName('audio_row'),
         let template       = document.createElement('template');
         template.innerHTML = html;
         return template.content.firstChild;
-    };
+    },
+
+    m_decrypt           = (() =>{
+        let a = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN0PQRSTUVWXYZO123456789+/=",
+            s = {
+                v: t => t.split("").reverse().join(""),
+                r: (t, i) =>{
+                    t = t.split("");
+                    for(let e, o = a + a, s = t.length; s--;)
+                        e = o.indexOf(t[s]),
+                        ~e && (t[s] = o.substr(e - i, 1));
+                    return t.join("")
+                },
+                x: (t, i) =>{
+                    let e = [];
+
+                    i = i.charCodeAt(0);
+
+                    t.split("").forEach(function(o){
+                        e.push(String.fromCharCode(o.charCodeAt(0) ^ i))
+                    });
+
+                    return e.join("");
+                }
+            },
+            o = t =>{
+                if(!t || t.length % 4 === 1)
+                    return !1;
+
+                let r = "";
+                for(let i, e, o = 0, s = 0; e = t.charAt(s++);){
+                    e = a.indexOf(e), ~e && (i = o % 4 ? 64 * i + e : e, o++ % 4) && (r += String.fromCharCode(255 & i >> (-2 * o & 6)));
+                }
+                return r;
+            };
+
+        return t =>{
+            if(~t.indexOf("audio_api_unavailable")){
+                let i = t.split("?extra=")[1].split("#"),
+                    e = o(i[1]);
+
+                i = o(i[0]);
+
+                if(!e || !i)
+                    return t;
+
+                e = e.split(String.fromCharCode(9));
+
+                for(let a, r, l = e.length; l--;){
+                    r = e[l].split(String.fromCharCode(11));
+                    a = r.splice(0, 1, i)[0];
+
+                    if(!s[a])
+                        return t;
+
+                    i = s[a].apply(null, r);
+                }
+
+                if(i && "http" === i.substr(0, 4))
+                    return i;
+            }
+            return t
+        };
+    })();
 
 // Controller
 // ----------------------------------------------------
@@ -132,6 +148,8 @@ let c_init                    = () => v_init(),
     },
 
     c_getAudioData            = audioId => new Promise((resolve, reject) =>{
+        // TODO Add reject errors
+
         let request = new XMLHttpRequest();
 
         request.open('POST', '/al_audio.php');
@@ -145,7 +163,7 @@ let c_init                    = () => v_init(),
         function onLoad(){
             // Quit if request was not successfull
             if(request.status !== 200){
-                console.warn("[svk]: Couldn't get data - request status not 200");
+                console.warn("[svk]: Couldn't get data from /al_audio.php - request status not 200");
                 reject();
                 return;
             }
@@ -166,12 +184,12 @@ let c_init                    = () => v_init(),
         try {
             let jsonString     = responseText.split('<!json>')[1].split('<!>')[0],
                 audioDataArr   = JSON.parse(jsonString)[0],
-                // linkURL        = new URL(audioDataArr[2]),
                 filenameUnsafe = `${audioDataArr[4]} - ${audioDataArr[3]}.mp3`,
                 filename       = m_decodeHtml(filenameUnsafe).replace(/[<>:"\/\\|?*]+/g, '');
 
             return {
-                url: e(audioDataArr[2]),
+                url     : m_decrypt(audioDataArr[2]),
+                duration: audioDataArr[5],
                 filename
             }
 
@@ -210,9 +228,11 @@ let c_init                    = () => v_init(),
     c_getAudioRows            = () => m_audioRows,
 
     c_downloadAudio           = audioData =>{
+        let {filename, url} = audioData;
+
         chrome.runtime.sendMessage({
             action: 'downloadAudio',
-            data  : audioData
+            data  : {filename, url}
         });
     };
 
@@ -254,8 +274,10 @@ let v_init               = () =>{
         // Remember that button added
         audioRow.classList.add('svk-btn-added');
 
-        // Write id to button and bind event
+        // Write id to button
         svkBtn.setAttribute('data-svk-id', c_getAudioIdFromRow(audioRow));
+
+        // Bind events
         svkBtn.addEventListener('click', v_onSvkBtnClick);
     },
 
