@@ -3,7 +3,7 @@
 
 @function bg-icon($color, $size){
   $start: '<svg xmlns="http://www.w3.org/2000/svg" width="#{$size}" height="#{$size}" viewBox="-6.5 -7 30 30">';
-  $end: '<path fill="#{$color}" d="M12.5 8.6L9 12.2V0H7v12.2L3.5 8.6l-1.4 1.5L8 16l5.9-5.9z"/></svg>';
+  $end: '<path fill="#{'rgb(#{red($color)}, #{green($color)}, #{blue($color)})'}" d="M12.5 8.6L9 12.2V0H7v12.2L3.5 8.6l-1.4 1.5L8 16l5.9-5.9z"/></svg>';
   @return url('data:image/svg+xml;utf8,'+ $start + $end);
 }
 

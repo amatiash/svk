@@ -152,7 +152,7 @@ let c_init                    = () => v_init(),
 
         let request = new XMLHttpRequest();
 
-        request.open('POST', '/al_audio.php');
+        request.open('POST', 'https://vk.com/al_audio.php');
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         request.addEventListener('load', onLoad);
         request.addEventListener('error', reject);
