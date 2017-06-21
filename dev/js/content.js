@@ -1,13 +1,14 @@
 'use strict';
 
+// fixed bug on file name change,
+// hide on audio delete/show on restore,
+
 // TODO Add bitrate and file size
-// TODO Fix player jump
 // TODO Add cat api
-// TODO Pause listener on page inactive
 // TODO Поправить логотипчик котейки
-// TODO Fix bug on file name change
+
 // TODO Handle multiple downloads at the same time
-// TODO Hide on audio delete/show on restore
+// TODO Fix player jump
 
 // Model
 // ----------------------------------------------------
@@ -147,13 +148,12 @@ let c_init                    = () => v_init(),
         }
     },
 
-    c_getAudioData            = audioId => new Promise((resolve, reject) =>{
-        // TODO Add reject errors
-
+    c_getAudioData            = (audioId, extended = false) => new Promise((resolve, reject) =>{
         let request = new XMLHttpRequest();
 
         request.open('POST', 'https://vk.com/al_audio.php');
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        request.setRequestHeader('X-Requested-With', "XMLHttpRequest");
         request.addEventListener('load', onLoad);
         request.addEventListener('error', reject);
         request.send('act=reload_audio&al=1&ids=' + audioId);
@@ -176,7 +176,52 @@ let c_init                    = () => v_init(),
                 return;
             }
 
-            resolve(audioData);
+            if(extended)
+                c_extendAudioData(audioData).then((audioData =>{
+                    resolve(audioData);
+                }), reject);
+            else
+                resolve(audioData);
+        }
+    }),
+
+    c_extendAudioData         = audioData => new Promise((resolve, reject) =>{
+        let request = new XMLHttpRequest();
+
+        request.open('GET', audioData.url);
+        request.setRequestHeader('Range', 'bytes=0-0');
+        request.addEventListener('load', onLoad);
+        request.addEventListener('error', onError);
+        request.send();
+
+        function onLoad(){
+            if(request.status >= 200 && request.status < 300){
+
+                let bytes = +request.getResponseHeader('Content-Range').split('/')[1],
+                    mb    = (bytes / (1024 * 1024)).toFixed(1),
+                    kbit  = bytes / 128,
+                    kbps  = Math.ceil(Math.round(kbit / audioData.duration) / 16) * 16;
+
+                // Update data
+                audioData.size    = mb + ' MB';
+                audioData.bitrate = kbps;
+
+                resolve(audioData);
+            }
+            else {
+                console.warn("[svk]: Audio file is not reachable");
+                reject({
+                    status    : request.status,
+                    statusText: request.statusText
+                });
+            }
+        }
+
+        function onError(){
+            reject({
+                status    : request.status,
+                statusText: request.statusText
+            });
         }
     }),
 
@@ -185,7 +230,7 @@ let c_init                    = () => v_init(),
             let jsonString     = responseText.split('<!json>')[1].split('<!>')[0],
                 audioDataArr   = JSON.parse(jsonString)[0],
                 filenameUnsafe = `${audioDataArr[4]} - ${audioDataArr[3]}.mp3`,
-                filename       = m_decodeHtml(filenameUnsafe).replace(/[<>:"\/\\|?*]+/g, '');
+                filename       = m_decodeHtml(filenameUnsafe).replace(/[<>:"\/\\|?*]+/g, '').trim();
 
             return {
                 url     : m_decrypt(audioDataArr[2]),
@@ -200,11 +245,13 @@ let c_init                    = () => v_init(),
 
     c_insertAfter             = (elem, refElem) => refElem.parentNode.insertBefore(elem, refElem.nextSibling),
 
-    c_isSvkBtnAdded           = audioRow => audioRow.classList.contains('svk-btn-added'),
+    c_isSvkBtnAdded           = audioRow => !!audioRow.querySelector('.svk-btn'),
+
+    c_isInfoAdded             = audioRow => !!audioRow.querySelector('.svk-bitrate'),
 
     c_getAudioIdFromRow       = audioRow => audioRow.getAttribute('data-full-id'),
 
-    c_getAudioRowCover        = audioRow => audioRow.querySelector('.audio_row_inner > .audio_row_cover_wrap'),
+    c_getAudioRowCover        = audioRow => audioRow.querySelector('.audio_row__cover_back'),
 
     c_getCurrentAudioId       = () =>{
         try {
@@ -239,9 +286,22 @@ let c_init                    = () => v_init(),
 // View
 // ----------------------------------------------------
 
-let v_init               = () =>{
+let v_editedAudioRow     = null,
+
+    v_init               = () =>{
         v_render();
-        setInterval(c_watchAudioRowsChange, 500);
+
+        let watch = setInterval(c_watchAudioRowsChange, 500);
+
+        // Watch only if window is active
+        window.addEventListener('blur', () => clearInterval(watch));
+        window.addEventListener('focus', () =>{
+            clearInterval(watch);
+            setInterval(c_watchAudioRowsChange, 500);
+        });
+
+        // Track audio edit save
+        document.addEventListener('click', v_onAudioEditSave);
 
         // Track audio cover click
         document.addEventListener('click', v_onPlayerCoverClick);
@@ -266,7 +326,8 @@ let v_init               = () =>{
         // ----------------------------------------------------
 
         let audioRowCover = c_getAudioRowCover(audioRow),
-            svkBtn        = c_getNewSvkBtn();
+            svkBtn        = c_getNewSvkBtn(),
+            editBtn       = audioRow.querySelector('#edit');
 
         // Insert button after cover
         c_insertAfter(svkBtn, audioRowCover);
@@ -279,9 +340,41 @@ let v_init               = () =>{
 
         // Bind events
         svkBtn.addEventListener('click', v_onSvkBtnClick);
+        //editBtn.addEventListener('mouseover', v_onAudioEditHover);
+        // audioRow.addEventListener('mouseenter', v_onAudioRowHover);
     },
 
-    v_onPlayerCoverClick = function(e){
+    v_removeSvkBtn       = audioRow =>{
+
+        // Quit if no active edited row
+        if(!v_editedAudioRow)
+            return;
+
+        // ----------------------------------------------------
+
+        let svkBtn = audioRow.querySelector('.svk-btn');
+
+        // Remove if added
+        svkBtn && svkBtn.remove();
+
+        audioRow.classList.remove('svk-btn-added');
+    },
+
+    v_addAudioInfo       = (audioRow, audioData) =>{
+        let audioDuration = audioRow.querySelector('.audio_duration');
+
+        // Exit if info added
+        if(c_isInfoAdded(audioRow))
+            return;
+
+        audioDuration.insertAdjacentHTML('beforebegin', `<div class="svk-bitrate">${audioData.bitrate}</div>`);
+        audioDuration.insertAdjacentHTML('beforebegin', `<div class="svk-size">${audioData.size}</div>`);
+
+        // Remember that audio info added
+        audioRow.classList.add('svk-info-added');
+    },
+
+    v_onPlayerCoverClick = e =>{
         let coverBtn      = e.target,
             isDiv         = coverBtn.nodeName === 'DIV',
             isPlayerCover = coverBtn.classList.contains('audio_page_player__cover'),
@@ -316,10 +409,10 @@ let v_init               = () =>{
         );
     },
 
-    v_onSvkBtnClick      = function(e){
+    v_onSvkBtnClick      = e =>{
         e.stopPropagation();
 
-        let svkBtn = this;
+        let svkBtn = e.target;
 
         // Quit if warning is showing
         // ----------------------------------------------------
@@ -336,7 +429,38 @@ let v_init               = () =>{
         );
     },
 
-    v_showWarning        = btn =>{
+    v_onAudioRowHover    = e =>{
+        let audioRow      = e.target;
+
+        // ----------------------------------------------------
+
+        // Exit on claimed and deleted
+        if(audioRow.classList.contains('claimed') || audioRow.classList.contains('audio_deleted'))
+            return;
+
+        // Exit if info added
+        if(c_isInfoAdded(audioRow))
+            return;
+
+        // ----------------------------------------------------
+
+        c_getAudioData(c_getAudioIdFromRow(audioRow), true).then(
+            audioData => v_addAudioInfo(audioRow, audioData),
+            () => void 0 // Do nothing on error
+        );
+    },
+
+    v_onAudioEditSave    = e =>{
+        // If clicked on save button
+        if(e.target.id === 'audio_save_btn'){
+            v_removeSvkBtn(v_editedAudioRow);
+            setTimeout(v_render, 350);
+        }
+    },
+
+    v_onAudioEditHover   = e => v_editedAudioRow = e.target.closest('.audio_row'),
+
+    v_showWarning = btn =>{
         clearTimeout(btn.svkWarningTimer);
 
         btn.classList.remove('--error');

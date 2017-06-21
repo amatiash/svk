@@ -27,7 +27,11 @@ $rowBtnWarn-color: white;
 
 $rowBtn-img: bg-icon($rowBtn-color, 34px);
 $rowBtn-img--hover: bg-icon($rowBtn-color--hover, 34px);
-$rowBtn-img--active: bg-icon($rowBtn-color--hover, 40px);
+
+$rowBtn-img-plist: bg-icon($rowBtn-color, 25px);
+$rowBtn-img-plist--hover: bg-icon($rowBtn-color--hover, 25px);
+
+//$rowBtn-img--active: bg-icon($rowBtn-color--hover, 32px);
 
 $rowBtnCover-img: bg-icon(white, 54px);
 
@@ -45,6 +49,7 @@ $rowBtnCover-img: bg-icon(white, 54px);
   -webkit-font-smoothing: subpixel-antialiased;
   transition: all 80ms linear, transform .3s;
 
+  .audio_deleted &,
   .claimed & {
     &:hover {
       background-color: $rowBtn-bg;
@@ -65,10 +70,20 @@ $rowBtnCover-img: bg-icon(white, 54px);
 }
 
 @mixin svk-btn--row {
+  position: absolute;
+  top: 7px;
+  left: 47px;
   width: 34px;
-  height: 34px;
-  margin-right: 5px;
+  height: 40px;
   border-radius: 2px;
+
+  .audio_pl_snippet__list & {
+    width: 25px;
+    height: 25px;
+    top: 8px;
+    border-radius: 50%;
+    left: 37px;
+  }
 }
 
 @mixin svk-pseudo-icon {
@@ -81,6 +96,25 @@ $rowBtnCover-img: bg-icon(white, 54px);
   width: 100%;
   height: 100%;
   transition: all 80ms linear, transform .3s;
+}
+
+@mixin svk-label {
+  display: inline-block;
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+
+  line-height: 11px;
+  background-color: gold;
+  height: 11px;
+  border-radius: 2px;
+  vertical-align: top;
+  margin-top: 1px;
+  margin-right: 4px;
+  text-align: center;
+
+  .audio_row:not(.audio_row_current):not(.no_actions):hover & {
+    display: none;
+  }
 }
 
 // ----------------------------------------------------
@@ -107,8 +141,12 @@ $rowBtnCover-img: bg-icon(white, 54px);
   &::after {
     @include svk-pseudo-icon;
     content: '';
-    background: $rowBtn-img no-repeat;
+    background: $rowBtn-img 50% 50% no-repeat;
     background-size: 100%;
+
+    .audio_pl_snippet__list & {
+      background: $rowBtn-img-plist 50% 50% no-repeat;
+    }
   }
 
   // Hover & active state
@@ -117,7 +155,11 @@ $rowBtnCover-img: bg-icon(white, 54px);
   &:hover {
     background-color: $rowBtn-bg--hover;
     &::after {
-      background: $rowBtn-img--hover no-repeat;
+      background: $rowBtn-img--hover 50% 50% no-repeat;
+
+      .audio_pl_snippet__list & {
+        background: $rowBtn-img-plist--hover 50% 50% no-repeat;
+      }
     }
   }
 
@@ -132,6 +174,8 @@ $rowBtnCover-img: bg-icon(white, 54px);
 .audio_page_player__cover {
   @include svk-btn;
 
+  .audio_page_player_fixed &,
+  .audio_page_player_fixed &::after,
   .audio_layer_container &,
   .audio_layer_container &::after {
     border-radius: 0 !important;
@@ -177,8 +221,32 @@ $rowBtnCover-img: bg-icon(white, 54px);
   }
 }
 
+.svk-bitrate {
+  @include svk-label;
+
+  width: 22px;
+}
+
+.svk-size {
+  @include svk-label;
+
+  width: 50px;
+}
+
 // Overrides
 // ----------------------------------------------------
+
+.audio_w_covers .audio_row .audio_row__inner {
+  padding-left: 54px + 34px !important;
+}
+
+.audio_row .audio_row__inner {
+  padding-left: 44px + 25px !important;
+}
+
+.audio_inline_player .audio_inline_player_left {
+  padding: 0 4px 0 36px !important;
+}
 
 // Fix progress line left
 .audio_inline_player {
@@ -186,9 +254,9 @@ $rowBtnCover-img: bg-icon(white, 54px);
 }
 
 // Imitate loaded svk btn
-.audio_row_cover_wrap {
-  $coverWidth: 34px;
-  $coverMargin: 5px;
+.audio_row__cover {
+  $coverWidth: 40px;
+  $coverMargin: 3px;
 
   margin-right: $coverWidth + $coverMargin * 2 !important;
   overflow: inherit !important;
@@ -199,8 +267,37 @@ $rowBtnCover-img: bg-icon(white, 54px);
     cursor: progress;
     position: absolute;
     left: $coverWidth + $coverMargin;
-    background: $rowBtn-bg $rowBtn-img no-repeat;
+    background: $rowBtn-bg $rowBtn-img 50% 50% no-repeat;
     background-size: 100%;
+    width: 34px;
+    border-radius: 2px;
+  }
+
+  .svk-btn-added & {
+    margin-right: $coverMargin !important;
+    overflow: hidden !important;
+  }
+}
+
+// Imitate loaded svk btn for playlist
+.audio_row__play_btn {
+  $coverWidth: 25px;
+  $coverMargin: 2px;
+
+  margin-right: $coverWidth + $coverMargin * 2 !important;
+  overflow: inherit !important;
+
+  &::after {
+    @include svk-pseudo-icon;
+    content: '';
+    cursor: progress;
+    position: absolute;
+    left: $coverWidth + $coverMargin;
+    background: $rowBtn-bg $rowBtn-img-plist 50% 50% no-repeat;
+    background-size: 100%;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
   }
 
   .svk-btn-added & {
