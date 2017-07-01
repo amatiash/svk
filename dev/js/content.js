@@ -1,14 +1,15 @@
 'use strict';
 
-// fixed bug on file name change,
-// hide on audio delete/show on restore,
+// DONE Fixed bug on file name change,
+// DONE Hide on audio delete/show on restore,
+// DONE Added bitrate and file size
+// DONE Remember bitrate and file size
 
-// TODO Add bitrate and file size
 // TODO Add cat api
-// TODO Поправить логотипчик котейки
-
+// TODO Add forget audioData
 // TODO Handle multiple downloads at the same time
-// TODO Fix player jump
+// TODO If cann't download file due to the filename -> hard filename clear, then download
+// TODO Check download for mobile
 
 // Model
 // ----------------------------------------------------
@@ -16,6 +17,40 @@
 let m_audioRows         = document.body.getElementsByClassName('audio_row'),
     m_svkBtnHtml        = '<div class="svk-btn"></div>',
     m_lastAudioRowsHash = null,
+    m_audioData         = {
+        version  : 2,
+        timestamp: Date.now()
+    },
+
+    m_init              = () =>{
+        let jsonData = localStorage.getItem('svk_audio_data'),
+            data     = m_audioData;
+
+        //  Quit if no data
+        if(!jsonData)
+            return;
+
+        // Parse data and check version
+        // ----------------------------------------------------
+
+        try {
+            data = JSON.parse(jsonData);
+        } catch(e){
+            console.warn("[svk]: Couldn't parse audioData from localStorage");
+            localStorage.removeItem('svk_audio_data'); // Reset data
+            return;
+        }
+
+        // Remove old data
+        if(!data.version || data.version < 2){
+            localStorage.removeItem('svk_audio_data');
+            return;
+        }
+
+        // ----------------------------------------------------
+
+        m_audioData = data;
+    },
 
     m_getAudioRowsHash  = () =>{
         let length = m_audioRows.length,
@@ -136,7 +171,10 @@ let m_audioRows         = document.body.getElementsByClassName('audio_row'),
 // Controller
 // ----------------------------------------------------
 
-let c_init                    = () => v_init(),
+let c_init                    = () =>{
+        m_init();
+        v_init();
+    },
 
     c_watchAudioRowsChange    = () =>{
         let hash = m_getAudioRowsHash();
@@ -176,6 +214,8 @@ let c_init                    = () => v_init(),
                 return;
             }
 
+            audioData.audioId = audioId;
+
             if(extended)
                 c_extendAudioData(audioData).then((audioData =>{
                     resolve(audioData);
@@ -184,6 +224,8 @@ let c_init                    = () => v_init(),
                 resolve(audioData);
         }
     }),
+
+    c_getLocalAudioData       = audioId => m_audioData[audioId],
 
     c_extendAudioData         = audioData => new Promise((resolve, reject) =>{
         let request = new XMLHttpRequest();
@@ -198,12 +240,11 @@ let c_init                    = () => v_init(),
             if(request.status >= 200 && request.status < 300){
 
                 let bytes = +request.getResponseHeader('Content-Range').split('/')[1],
-                    mb    = (bytes / (1024 * 1024)).toFixed(1),
                     kbit  = bytes / 128,
                     kbps  = Math.ceil(Math.round(kbit / audioData.duration) / 16) * 16;
 
                 // Update data
-                audioData.size    = mb + ' MB';
+                audioData.size    = +(bytes / (1024 * 1024)).toFixed(1); // MB
                 audioData.bitrate = kbps;
 
                 resolve(audioData);
@@ -249,6 +290,8 @@ let c_init                    = () => v_init(),
 
     c_isInfoAdded             = audioRow => !!audioRow.querySelector('.svk-bitrate'),
 
+    c_isInMyAudios            = audioRow => !!audioRow.closest('.audio_owner_list_canedit, [data-audio-context="my"], .audio_pl__canedit'),
+
     c_getAudioIdFromRow       = audioRow => audioRow.getAttribute('data-full-id'),
 
     c_getAudioRowCover        = audioRow => audioRow.querySelector('.audio_row__cover_back'),
@@ -281,14 +324,34 @@ let c_init                    = () => v_init(),
             action: 'downloadAudio',
             data  : {filename, url}
         });
+    },
+
+    c_getShortDate            = () =>{
+        let date  = new Date(),
+            year  = date.getFullYear() - 2000 + '',
+            month = ("0" + (date.getMonth() + 1)).slice(-2);
+
+        // yymmdd
+        return year + month + date.getDate();
+    },
+
+    c_rememberAudioInfo       = audioData =>{
+        if(m_audioData[audioData.audioId])
+            console.warn("[svk]: I do remember this! Should I do it again?");
+
+        m_audioData[audioData.audioId] = {
+            s: audioData.size,
+            b: audioData.bitrate,
+            d: c_getShortDate()
+        };
+
+        localStorage.setItem('svk_audio_data', JSON.stringify(m_audioData));
     };
 
 // View
 // ----------------------------------------------------
 
-let v_editedAudioRow     = null,
-
-    v_init               = () =>{
+let v_init               = () =>{
         v_render();
 
         let watch = setInterval(c_watchAudioRowsChange, 500);
@@ -300,9 +363,6 @@ let v_editedAudioRow     = null,
             setInterval(c_watchAudioRowsChange, 500);
         });
 
-        // Track audio edit save
-        document.addEventListener('click', v_onAudioEditSave);
-
         // Track audio cover click
         document.addEventListener('click', v_onPlayerCoverClick);
     },
@@ -313,8 +373,17 @@ let v_editedAudioRow     = null,
         if(!c_getAudioRows().length)
             return;
 
-        // Add download buttons, bind click event
-        [].forEach.call(c_getAudioRows(), v_addSvkBtn);
+        // Do the thing!
+        [].forEach.call(c_getAudioRows(), v_addSvkStaff);
+    },
+
+    v_addSvkStaff        = audioRow =>{
+        v_addSvkBtn(audioRow);
+
+        let localAudioData = c_getLocalAudioData(c_getAudioIdFromRow(audioRow));
+
+        if(localAudioData)
+            v_addAudioInfo(audioRow, localAudioData);
     },
 
     v_addSvkBtn          = audioRow =>{
@@ -326,8 +395,7 @@ let v_editedAudioRow     = null,
         // ----------------------------------------------------
 
         let audioRowCover = c_getAudioRowCover(audioRow),
-            svkBtn        = c_getNewSvkBtn(),
-            editBtn       = audioRow.querySelector('#edit');
+            svkBtn        = c_getNewSvkBtn();
 
         // Insert button after cover
         c_insertAfter(svkBtn, audioRowCover);
@@ -340,35 +408,32 @@ let v_editedAudioRow     = null,
 
         // Bind events
         svkBtn.addEventListener('click', v_onSvkBtnClick);
-        //editBtn.addEventListener('mouseover', v_onAudioEditHover);
-        // audioRow.addEventListener('mouseenter', v_onAudioRowHover);
-    },
-
-    v_removeSvkBtn       = audioRow =>{
-
-        // Quit if no active edited row
-        if(!v_editedAudioRow)
-            return;
-
-        // ----------------------------------------------------
-
-        let svkBtn = audioRow.querySelector('.svk-btn');
-
-        // Remove if added
-        svkBtn && svkBtn.remove();
-
-        audioRow.classList.remove('svk-btn-added');
+        audioRow.addEventListener('mouseenter', v_onAudioRowHover);
     },
 
     v_addAudioInfo       = (audioRow, audioData) =>{
-        let audioDuration = audioRow.querySelector('.audio_duration');
+        let audioDuration = audioRow.querySelector('.audio_row__duration'),
+            bitrate       = audioData.bitrate || audioData.b,
+            size          = (audioData.size || audioData.s) + ' MB',
+            bitrateClass  = 'svk-bitrate--';
 
         // Exit if info added
         if(c_isInfoAdded(audioRow))
             return;
 
-        audioDuration.insertAdjacentHTML('beforebegin', `<div class="svk-bitrate">${audioData.bitrate}</div>`);
-        audioDuration.insertAdjacentHTML('beforebegin', `<div class="svk-size">${audioData.size}</div>`);
+        if(bitrate >= 320)
+            bitrateClass += 320;
+        else if(bitrate >= 256)
+            bitrateClass += 256;
+        else if(bitrate >= 192)
+            bitrateClass += 192;
+        else if(bitrate >= 160)
+            bitrateClass += 160;
+        else
+            bitrateClass += 'dnishe';
+
+        audioDuration.insertAdjacentHTML('beforebegin', `<div class="svk-bitrate ${bitrateClass}">${bitrate}</div>`);
+        audioDuration.insertAdjacentHTML('beforebegin', `<div class="svk-size">${size}</div>`);
 
         // Remember that audio info added
         audioRow.classList.add('svk-info-added');
@@ -430,7 +495,8 @@ let v_editedAudioRow     = null,
     },
 
     v_onAudioRowHover    = e =>{
-        let audioRow      = e.target;
+        let audioRow = e.target,
+            audioId  = c_getAudioIdFromRow(audioRow);
 
         // ----------------------------------------------------
 
@@ -438,29 +504,32 @@ let v_editedAudioRow     = null,
         if(audioRow.classList.contains('claimed') || audioRow.classList.contains('audio_deleted'))
             return;
 
-        // Exit if info added
-        if(c_isInfoAdded(audioRow))
+        // Exit if info added or getting info is in progress
+        if(c_isInfoAdded(audioRow) || audioRow.classList.contains('_svk-getting-info'))
+            return;
+
+        // Exit if there is local data
+        if(c_getLocalAudioData(audioId))
             return;
 
         // ----------------------------------------------------
 
-        c_getAudioData(c_getAudioIdFromRow(audioRow), true).then(
-            audioData => v_addAudioInfo(audioRow, audioData),
+        // Add loading class
+        audioRow.classList.add('_svk-getting-info');
+
+        c_getAudioData(audioId, true).then(
+            audioData =>{
+                v_addAudioInfo(audioRow, audioData);
+
+                if(c_isInMyAudios(audioRow))
+                    c_rememberAudioInfo(audioData);
+            },
             () => void 0 // Do nothing on error
-        );
+
+        ).then(() => audioRow.classList.remove('_svk-getting-info'));
     },
 
-    v_onAudioEditSave    = e =>{
-        // If clicked on save button
-        if(e.target.id === 'audio_save_btn'){
-            v_removeSvkBtn(v_editedAudioRow);
-            setTimeout(v_render, 350);
-        }
-    },
-
-    v_onAudioEditHover   = e => v_editedAudioRow = e.target.closest('.audio_row'),
-
-    v_showWarning = btn =>{
+    v_showWarning        = btn =>{
         clearTimeout(btn.svkWarningTimer);
 
         btn.classList.remove('--error');

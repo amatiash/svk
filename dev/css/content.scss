@@ -77,7 +77,8 @@ $rowBtnCover-img: bg-icon(white, 54px);
   height: 40px;
   border-radius: 2px;
 
-  .audio_pl_snippet__list & {
+  .audio_pl_snippet__list &,
+  .post_content & {
     width: 25px;
     height: 25px;
     top: 8px;
@@ -102,15 +103,16 @@ $rowBtnCover-img: bg-icon(white, 54px);
   display: inline-block;
   font-size: 10px;
   font-family: Arial, sans-serif;
-
   line-height: 11px;
-  background-color: gold;
   height: 11px;
-  border-radius: 2px;
   vertical-align: top;
-  margin-top: 1px;
-  margin-right: 4px;
   text-align: center;
+  top: 14px;
+  color: #939393;
+
+  .audio_w_covers & {
+    top: 27px;
+  }
 
   .audio_row:not(.audio_row_current):not(.no_actions):hover & {
     display: none;
@@ -144,7 +146,8 @@ $rowBtnCover-img: bg-icon(white, 54px);
     background: $rowBtn-img 50% 50% no-repeat;
     background-size: 100%;
 
-    .audio_pl_snippet__list & {
+    .audio_pl_snippet__list &,
+    .post_content & {
       background: $rowBtn-img-plist 50% 50% no-repeat;
     }
   }
@@ -157,7 +160,8 @@ $rowBtnCover-img: bg-icon(white, 54px);
     &::after {
       background: $rowBtn-img--hover 50% 50% no-repeat;
 
-      .audio_pl_snippet__list & {
+      .audio_pl_snippet__list &,
+      .post_content & {
         background: $rowBtn-img-plist--hover 50% 50% no-repeat;
       }
     }
@@ -224,17 +228,57 @@ $rowBtnCover-img: bg-icon(white, 54px);
 .svk-bitrate {
   @include svk-label;
 
+  background-color: gray;
+  border-radius: 2px;
   width: 22px;
+  position: absolute;
+  right: 40px;
+  color: white;
+
+  &--320 {
+    background-color: #3574a7;
+  }
+  &--256 {
+    background-color: #438cc7;
+  }
+  &--192 {
+    background-color: #3db5af;
+  }
+  &--160 {
+    background-color: #4fd2ba;
+  }
+  &--dnishe {
+    background-color: #9dc3c1;
+  }
 }
 
 .svk-size {
   @include svk-label;
 
   width: 50px;
+  position: absolute;
+  background: none;
+  margin: 0;
+  right: -12px;
 }
 
 // Overrides
 // ----------------------------------------------------
+
+.audio_row .audio_row__info {
+  position: relative  !important;
+}
+.audio_row .audio_row__duration {
+  min-width: 30px;
+}
+
+.audio_row .audio_row__duration {
+  top: 0 !important;
+}
+
+.audio_w_covers .audio_row .audio_row__duration {
+  top: 8px !important;
+}
 
 .audio_w_covers .audio_row .audio_row__inner {
   padding-left: 54px + 34px !important;
