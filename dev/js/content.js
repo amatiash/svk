@@ -1,14 +1,10 @@
 'use strict';
 
-// DONE Fixed bug on file name change,
-// DONE Hide on audio delete/show on restore,
-// DONE Added bitrate and file size
-// DONE Remember bitrate and file size
-
 // TODO Add cat api
 // TODO Add forget audioData
-// TODO Handle multiple downloads at the same time
 // TODO If cann't download file due to the filename -> hard filename clear, then download
+// TODO Fix onEdit
+// TODO Handle multiple downloads at the same time
 // TODO Check download for mobile
 
 // Model

@@ -77,6 +77,7 @@ $rowBtnCover-img: bg-icon(white, 54px);
   height: 40px;
   border-radius: 2px;
 
+  .audio_pl_edit_box &,
   .audio_pl_snippet__list &,
   .post_content & {
     width: 25px;
@@ -146,6 +147,7 @@ $rowBtnCover-img: bg-icon(white, 54px);
     background: $rowBtn-img 50% 50% no-repeat;
     background-size: 100%;
 
+    .audio_pl_edit_box &,
     .audio_pl_snippet__list &,
     .post_content & {
       background: $rowBtn-img-plist 50% 50% no-repeat;
@@ -160,6 +162,7 @@ $rowBtnCover-img: bg-icon(white, 54px);
     &::after {
       background: $rowBtn-img--hover 50% 50% no-repeat;
 
+      .audio_pl_edit_box &,
       .audio_pl_snippet__list &,
       .post_content & {
         background: $rowBtn-img-plist--hover 50% 50% no-repeat;
