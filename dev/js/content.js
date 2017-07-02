@@ -1,11 +1,16 @@
 'use strict';
 
+// DONE Fix onEdit
+// DONE Fix unhover bitrate and size display
+// DONE Add forget audioData
+// DONE Test in Windows
+// DONE Handle download error
+// DONE If cann't download file due to the filename -> hard filename clear, then download
+// DONE Refactored background.js
+
 // TODO Add cat api
-// TODO Add forget audioData
-// TODO If cann't download file due to the filename -> hard filename clear, then download
-// TODO Fix onEdit
+// TODO Show audioInfo on current song
 // TODO Handle multiple downloads at the same time
-// TODO Check download for mobile
 
 // Model
 // ----------------------------------------------------
@@ -170,6 +175,12 @@ let m_audioRows         = document.body.getElementsByClassName('audio_row'),
 let c_init                    = () =>{
         m_init();
         v_init();
+        chrome.runtime.onMessage.addListener(c_onMessage);
+    },
+
+    c_onMessage = message =>{
+        if(message.event === 'downloadAudioFailed')
+            v_showWarningById(message.data.btnId);
     },
 
     c_watchAudioRowsChange    = () =>{
@@ -266,7 +277,7 @@ let c_init                    = () =>{
         try {
             let jsonString     = responseText.split('<!json>')[1].split('<!>')[0],
                 audioDataArr   = JSON.parse(jsonString)[0],
-                filenameUnsafe = `${audioDataArr[4]} - ${audioDataArr[3]}.mp3`,
+                filenameUnsafe = `${audioDataArr[4]} - ${audioDataArr[3]}`,
                 filename       = m_decodeHtml(filenameUnsafe).replace(/[<>:"\/\\|?*]+/g, '').trim();
 
             return {
@@ -313,12 +324,12 @@ let c_init                    = () =>{
 
     c_getAudioRows            = () => m_audioRows,
 
-    c_downloadAudio           = audioData =>{
+    c_downloadAudio           = (audioData, btnId) =>{
         let {filename, url} = audioData;
 
         chrome.runtime.sendMessage({
-            action: 'downloadAudio',
-            data  : {filename, url}
+            event: 'downloadAudio',
+            data : {filename, url, btnId}
         });
     },
 
@@ -342,6 +353,11 @@ let c_init                    = () =>{
         };
 
         localStorage.setItem('svk_audio_data', JSON.stringify(m_audioData));
+    },
+
+    c_forgetAudioInfo         = audioId =>{
+        delete m_audioData[audioId];
+        localStorage.setItem('svk_audio_data', JSON.stringify(m_audioData));
     };
 
 // View
@@ -359,12 +375,11 @@ let v_init               = () =>{
             setInterval(c_watchAudioRowsChange, 500);
         });
 
-        // Track audio cover click
-        document.addEventListener('click', v_onPlayerCoverClick);
+        document.addEventListener('click', v_onSaveButtonClick);
+        document.addEventListener('click', v_onPlayerCoverClick); // Track audio cover click
     },
 
     v_render             = () =>{
-
         // Quit if no items to render
         if(!c_getAudioRows().length)
             return;
@@ -374,12 +389,19 @@ let v_init               = () =>{
     },
 
     v_addSvkStaff        = audioRow =>{
-        v_addSvkBtn(audioRow);
+        let audioId        = c_getAudioIdFromRow(audioRow),
+            localAudioData = c_getLocalAudioData(audioId);
 
-        let localAudioData = c_getLocalAudioData(c_getAudioIdFromRow(audioRow));
+        v_addSvkBtn(audioRow);
 
         if(localAudioData)
             v_addAudioInfo(audioRow, localAudioData);
+
+        if(audioRow.classList.contains('audio_row__deleted'))
+            c_forgetAudioInfo(audioId);
+
+        audioRow.removeEventListener('mouseenter', v_onAudioRowHover);
+        audioRow.addEventListener('mouseenter', v_onAudioRowHover);
     },
 
     v_addSvkBtn          = audioRow =>{
@@ -402,9 +424,9 @@ let v_init               = () =>{
         // Write id to button
         svkBtn.setAttribute('data-svk-id', c_getAudioIdFromRow(audioRow));
 
-        // Bind events
         svkBtn.addEventListener('click', v_onSvkBtnClick);
-        audioRow.addEventListener('mouseenter', v_onAudioRowHover);
+
+        return true;
     },
 
     v_addAudioInfo       = (audioRow, audioData) =>{
@@ -428,11 +450,13 @@ let v_init               = () =>{
         else
             bitrateClass += 'dnishe';
 
-        audioDuration.insertAdjacentHTML('beforebegin', `<div class="svk-bitrate ${bitrateClass}">${bitrate}</div>`);
-        audioDuration.insertAdjacentHTML('beforebegin', `<div class="svk-size">${size}</div>`);
+        audioDuration.insertAdjacentHTML('afterend', `<div class="svk-bitrate ${bitrateClass}">${bitrate}</div>`);
+        audioDuration.insertAdjacentHTML('afterend', `<div class="svk-size">${size}</div>`);
 
         // Remember that audio info added
         audioRow.classList.add('svk-info-added');
+
+        return true;
     },
 
     v_onPlayerCoverClick = e =>{
@@ -464,8 +488,10 @@ let v_init               = () =>{
         // Get data -> download
         // ----------------------------------------------------
 
+        coverBtn.id = Date.now();
+
         c_getAudioData(audioId).then(
-            audioData => c_downloadAudio(audioData),
+            audioData => c_downloadAudio(audioData, coverBtn.id),
             () => v_showWarning(coverBtn)
         );
     },
@@ -484,8 +510,10 @@ let v_init               = () =>{
         // Get data -> download
         // ----------------------------------------------------
 
+        svkBtn.id = Date.now();
+
         c_getAudioData(svkBtn.getAttribute('data-svk-id')).then(
-            audioData => c_downloadAudio(audioData),
+            audioData => c_downloadAudio(audioData, svkBtn.id),
             () => v_showWarning(svkBtn)
         );
     },
@@ -520,9 +548,17 @@ let v_init               = () =>{
                 if(c_isInMyAudios(audioRow))
                     c_rememberAudioInfo(audioData);
             },
-            () => void 0 // Do nothing on error
+            () =>{} // Do nothing on error
 
         ).then(() => audioRow.classList.remove('_svk-getting-info'));
+    },
+
+    v_onSaveButtonClick  = e =>{
+        let isSaveBtn   = e.target.id === 'audio_save_btn',
+            isDeleteBtn = e.target.id === 'audio_row__action_delete';
+
+        if(isSaveBtn || isDeleteBtn)
+            setTimeout(v_render, 200);
     },
 
     v_showWarning        = btn =>{
@@ -534,6 +570,11 @@ let v_init               = () =>{
         btn.svkWarningTimer = setTimeout(function(){
             btn.classList.remove('--error');
         }, 700);
+    },
+
+    v_showWarningById    = btnId =>{
+        let btn = document.getElementById(btnId);
+        btn && v_showWarning(btn);
     };
 
 // ----------------------------------------------------

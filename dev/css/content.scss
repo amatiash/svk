@@ -111,6 +111,10 @@ $rowBtnCover-img: bg-icon(white, 54px);
   top: 14px;
   color: #939393;
 
+  .audio_row__duration[style="visibility: hidden;"] ~ & {
+    display: none;
+  }
+
   .audio_w_covers & {
     top: 27px;
   }
