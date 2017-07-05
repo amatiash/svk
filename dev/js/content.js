@@ -1,13 +1,5 @@
 'use strict';
 
-// DONE Fix onEdit
-// DONE Fix unhover bitrate and size display
-// DONE Add forget audioData
-// DONE Test in Windows
-// DONE Handle download error
-// DONE If cann't download file due to the filename -> hard filename clear, then download
-// DONE Refactored background.js
-
 // TODO Add cat api
 // TODO Show audioInfo on current song
 // TODO Handle multiple downloads at the same time
@@ -178,7 +170,7 @@ let c_init                    = () =>{
         chrome.runtime.onMessage.addListener(c_onMessage);
     },
 
-    c_onMessage = message =>{
+    c_onMessage               = message =>{
         if(message.event === 'downloadAudioFailed')
             v_showWarningById(message.data.btnId);
     },
