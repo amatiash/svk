@@ -8,18 +8,10 @@ let c_init          = () =>{
         chrome.runtime.onMessage.addListener(c_onMessage);
     },
 
-    c_onIconClick   = tab =>{
-        let openInCurrentTab = (tab.url === 'chrome://newtab/' || tab.url === 'about:blank');
-
-        if(openInCurrentTab)
-            chrome.tabs.update(tab.id, {
-                url: 'https://vk.com/audio'
-            });
-        else
-            chrome.tabs.create({
-                url  : "https://vk.com/audio",
-                index: ++tab.index
-            });
+    c_onIconClick   = () =>{
+        chrome.browserAction.setPopup({
+            popup: 'popup.html'
+        });
     },
 
     c_onMessage     = (message, sender) =>{
