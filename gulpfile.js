@@ -31,10 +31,15 @@ gulp.task('build:styles', function(){
 
 // ----------------------------------------------------
 
-gulp.task('build:copy', ['build:copy-manifest', 'build:copy-img', 'build:copy-locales']);
+gulp.task('build:copy', ['build:copy-manifest', 'build:copy-img', 'build:copy-locales', 'build:copy-popup']);
 
 gulp.task('build:copy-manifest', () =>
     gulp.src(DEV + 'manifest.json')
+        .pipe(gulp.dest(BUILD))
+);
+
+gulp.task('build:copy-popup', () =>
+    gulp.src(DEV + 'popup.html')
         .pipe(gulp.dest(BUILD))
 );
 
