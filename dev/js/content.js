@@ -1,6 +1,5 @@
 'use strict';
 
-// TODO Add cat api
 // TODO Show audioInfo on current song
 // TODO Handle multiple downloads at the same time
 

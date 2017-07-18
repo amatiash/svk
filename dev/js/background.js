@@ -4,14 +4,7 @@
 // ----------------------------------------------------
 
 let c_init          = () =>{
-        chrome.browserAction.onClicked.addListener(c_onIconClick);
         chrome.runtime.onMessage.addListener(c_onMessage);
-    },
-
-    c_onIconClick   = () =>{
-        chrome.browserAction.setPopup({
-            popup: 'popup.html'
-        });
     },
 
     c_onMessage     = (message, sender) =>{

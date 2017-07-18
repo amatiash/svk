@@ -49,7 +49,8 @@ $rowBtnCover-img: bg-icon(white, 54px);
   -webkit-font-smoothing: subpixel-antialiased;
   transition: all 80ms linear, transform .3s;
 
-  .audio_deleted &,
+  .audio_row__deleted &,
+  .audio_row__claimed &,
   .claimed & {
     &:hover {
       background-color: $rowBtn-bg;
@@ -118,10 +119,6 @@ $rowBtnCover-img: bg-icon(white, 54px);
 
   .audio_w_covers & {
     top: 27px;
-  }
-
-  .audio_row:not(.audio_row_current):not(.no_actions):hover & {
-    display: none;
   }
 }
 
