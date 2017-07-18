@@ -7,5 +7,14 @@
   },
   "iconTitle": {
     "message": "Показать котейку"
+  },
+  "shareText": {
+    "message": "Поделиться"
+  },
+  "copyLinkText": {
+    "message": "Скопировать ссылку"
+  },
+  "copyLinkTextCopied": {
+    "message": "Скопировано ✓"
   }
 }

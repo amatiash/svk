@@ -1,0 +1,62 @@
+body {
+  text-align: center;
+}
+
+.footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid gainsboro;
+  cursor: default;
+  font-family: -apple-system,BlinkMacSystemFont,Roboto,Open Sans,Helvetica Neue,sans-serif;
+  font-size: 12.5px;
+}
+
+.vk-btn {
+  padding: 7px 16px 8px;
+  margin: 0;
+  font-size: 12.5px;
+  display: inline-block;
+  zoom: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  outline: none;
+  font-family: -apple-system,BlinkMacSystemFont,Roboto,Open Sans,Helvetica Neue,sans-serif;
+  vertical-align: top;
+  line-height: 15px;
+  text-align: center;
+  text-decoration: none;
+  background-color: #5e81a8;
+  color: #fff;
+  border: 0;
+  border-radius: 2px;
+  box-sizing: border-box;
+
+  &:hover {
+    background-color: #6888ad;
+    text-decoration: none;
+  }
+
+  &:active {
+    background-color: #5779a1;
+  }
+}
+
+.copy-link-btn {
+  display: block;
+  min-width: 170px;
+  width: 100%;
+}
+
+.cat {
+  max-width: 750px;
+  max-height: 500px;
+}
+
+.cat,
+.cat404 {
+  border-radius: 2px;
+}
+
+.hidden {
+  display: none;
+}

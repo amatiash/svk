@@ -1,11 +1,20 @@
 {
   "appName": {
-    "message": "Download music vk vk.com"
+    "message": "VK music download ♩"
   },
   "appDesc": {
     "message": "Free, easy and fast vk music downloader 😼"
   },
   "iconTitle": {
     "message": "Get cat"
+  },
+  "shareText": {
+    "message": "Share"
+  },
+  "copyLinkText": {
+    "message": "Copy link"
+  },
+  "copyLinkTextCopied": {
+    "message": "Copied ✓"
   }
 }

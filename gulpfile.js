@@ -49,7 +49,7 @@ gulp.task('build:copy-locales', () =>
 );
 
 gulp.task('build:copy-img', () =>
-    gulp.src(DEV + 'img/*.png')
+    gulp.src(DEV + 'img/*')
         .pipe(gulp.dest(BUILD + 'img'))
 );
 
