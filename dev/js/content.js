@@ -404,7 +404,13 @@ let v_init               = () =>{
         // ----------------------------------------------------
 
         let audioRowCover = c_getAudioRowCover(audioRow),
-            svkBtn        = c_getNewSvkBtn();
+            svkBtn        = c_getNewSvkBtn(),
+            coverPlayBtn  = audioRow.querySelector('.audio_row__cover');
+
+        if(coverPlayBtn){
+            let isCoverPlayBtnHidden = getComputedStyle(coverPlayBtn).display === 'none';
+            isCoverPlayBtnHidden && audioRow.classList.add('svk-btn-rounded');
+        }
 
         // Insert button after cover
         c_insertAfter(svkBtn, audioRowCover);

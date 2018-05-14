@@ -78,15 +78,20 @@ $rowBtnCover-img: bg-icon(white, 54px);
   height: 40px;
   border-radius: 2px;
 
-  .im-mess &,
-  .audio_pl_edit_box &,
-  .audio_pl_snippet__list &,
-  .post_content & {
+  .svk-btn-rounded & {
     width: 25px;
     height: 25px;
     top: 8px;
     border-radius: 50%;
     left: 37px;
+
+    &::after {
+      background: $rowBtn-img-plist 50% 50% no-repeat;
+    }
+
+    &:hover::after {
+      background: $rowBtn-img-plist--hover 50% 50% no-repeat;
+    }
   }
 }
 
@@ -148,13 +153,6 @@ $rowBtnCover-img: bg-icon(white, 54px);
     content: '';
     background: $rowBtn-img 50% 50% no-repeat;
     background-size: 100%;
-
-    .im-mess &,
-    .audio_pl_edit_box &,
-    .audio_pl_snippet__list &,
-    .post_content & {
-      background: $rowBtn-img-plist 50% 50% no-repeat;
-    }
   }
 
   // Hover & active state
@@ -164,13 +162,6 @@ $rowBtnCover-img: bg-icon(white, 54px);
     background-color: $rowBtn-bg--hover;
     &::after {
       background: $rowBtn-img--hover 50% 50% no-repeat;
-
-      .im-mess &,
-      .audio_pl_edit_box &,
-      .audio_pl_snippet__list &,
-      .post_content & {
-        background: $rowBtn-img-plist--hover 50% 50% no-repeat;
-      }
     }
   }
 
